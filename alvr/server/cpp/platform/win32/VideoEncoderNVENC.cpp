@@ -22,7 +22,7 @@ VideoEncoderNVENC::VideoEncoderNVENC(std::shared_ptr<CD3DRender> pD3DRender
 	, m_renderHeight(height)
 	, m_bitrateInMBits(30)
 {
-	
+	//fpOut.open("C:\\AT\\ALVR\\build\\alvr_streamer_windows\\output.h264");
 }
 
 VideoEncoderNVENC::~VideoEncoderNVENC()
@@ -89,6 +89,7 @@ void VideoEncoderNVENC::Shutdown()
 
 	if (fpOut) {
 		fpOut.close();
+		NalParseClose();
 	}
 }
 void SaveTextureAsBytes(ID3D11DeviceContext* context, ID3D11Texture2D* texture, std::string filename_s)
@@ -183,18 +184,16 @@ void VideoEncoderNVENC::Transmit(ID3D11Texture2D *pTexture, uint64_t presentatio
 	count++;
 	//collect renderred frame
 	bool saveFrame = false;
-	if(count%50==0){
+	if(count%500==0){
 		saveFrame = true;
 	}
 	m_NvNecoder->EncodeFrame(vPacket, &picParams, saveFrame, count);
 
 	for (std::vector<uint8_t> &packet : vPacket)
 	{
-		std::ofstream fpOut("output.txt");
 		if (fpOut) {
 			fpOut.write(reinterpret_cast<char*>(packet.data()), packet.size());
 		}
-		fpOut.close();
 		
 		ParseFrameNals(m_codec, packet.data(), (int)packet.size(), targetTimestampNs, insertIDR);
 	}
