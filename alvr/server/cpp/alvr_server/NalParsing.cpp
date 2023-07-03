@@ -7,7 +7,7 @@
 #include <string.h>
 #include <fstream>
 
-std::ofstream fpOut("C:\\AT\\ALVR\\build\\alvr_streamer_windows\\output.h264");
+// std::ofstream fpOut("C:\\AT\\ALVR\\build\\alvr_streamer_windows\\output.h264");
 
 static const char NAL_PREFIX_3B[] = {0x00, 0x00, 0x01};
 static const char NAL_PREFIX_4B[] = {0x00, 0x00, 0x00, 0x01};
@@ -115,9 +115,9 @@ void ParseFrameNals(
     }
 
     VideoSend(targetTimestampNs, buf, len, isIdr);
-    fpOut.write(reinterpret_cast<const char*>(buf), len);
+    // fpOut.write(reinterpret_cast<const char*>(buf), len);
 }
 
 void NalParseClose(){
-    fpOut.close();
+    // fpOut.close();
 }
