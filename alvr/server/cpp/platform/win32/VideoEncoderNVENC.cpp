@@ -22,7 +22,7 @@ VideoEncoderNVENC::VideoEncoderNVENC(std::shared_ptr<CD3DRender> pD3DRender
 	, m_renderHeight(height)
 	, m_bitrateInMBits(30)
 {
-	fpOut.open("C:\\AT\\ALVR\\build\\alvr_streamer_windows\\output.h264");
+	//fpOut.open("C:\\AT\\ALVR\\build\\alvr_streamer_windows\\output.h264");
 }
 
 VideoEncoderNVENC::~VideoEncoderNVENC()
@@ -169,6 +169,7 @@ void VideoEncoderNVENC::Transmit(ID3D11Texture2D *pTexture, uint64_t presentatio
 	}
 
 	std::vector<std::vector<uint8_t>> vPacket;
+	std::vector<uint8_t> param;
 
 	const NvEncInputFrame* encoderInputFrame = m_NvNecoder->GetNextInputFrame();
 
@@ -192,14 +193,6 @@ void VideoEncoderNVENC::Transmit(ID3D11Texture2D *pTexture, uint64_t presentatio
 	for (std::vector<uint8_t> &packet : vPacket)
 	{
 		if (fpOut) {
-			if (packet.size() > 5 && packet[4] == 0x67) {
-            // Write SPS data
-            fpOut.write(reinterpret_cast<char *>(packet.data()), packet.size());
-        }
-        else if (packet.size() > 5 && packet[4] == 0x68) {
-            // Write PPS data
-            fpOut.write(reinterpret_cast<char *>(packet.data()), packet.size());
-        }
 			fpOut.write(reinterpret_cast<char*>(packet.data()), packet.size());
 		}
 		

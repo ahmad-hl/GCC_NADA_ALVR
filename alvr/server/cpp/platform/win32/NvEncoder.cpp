@@ -478,7 +478,10 @@ void NvEncoder::savingBuffer(int bfrIdx, int count){
     lockBitstream.outputBitstream = m_vBitstreamOutputBuffer[bfrIdx];
     lockBitstream.doNotWait = false;
     NVENC_API_CALL(m_nvenc.nvEncLockBitstream(m_hEncoder, &lockBitstream));
+    std::vector<uint8_t> param;
+    GetSequenceParams(param);
 
+    outfile.write(reinterpret_cast<char*>(param.data()), param.size());
     outfile.write((char*)lockBitstream.outputBitstream, lockBitstream.bitstreamSizeInBytes);
 
     // Close the file
