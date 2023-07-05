@@ -35,6 +35,8 @@ void VideoEncoderNVENC::Initialize()
 	//
 
 	NV_ENC_BUFFER_FORMAT format = NV_ENC_BUFFER_FORMAT_ABGR;
+	//NV_ENC_BUFFER_FORMAT format = NV_ENC_BUFFER_FORMAT_NV12;
+	
 	
 	if (Settings::Instance().m_use10bitEncoder) {
 		format = NV_ENC_BUFFER_FORMAT_ABGR10;

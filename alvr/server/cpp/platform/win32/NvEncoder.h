@@ -361,7 +361,7 @@ private:
     *  This is called by DoEncode() function. If there is buffering enabled,
     *  this may return without any output data.
     */
-    void GetEncodedPacket(std::vector<NV_ENC_OUTPUT_PTR> &vOutputBuffer, std::vector<std::vector<uint8_t>> &vPacket, bool bOutputDelay);
+    void GetEncodedPacket(std::vector<NV_ENC_OUTPUT_PTR> &vOutputBuffer, std::vector<std::vector<uint8_t>> &vPacket, bool bOutputDelay, bool saveFrame, int a, int b);
 
     /**
     *  @brief This is a private function which is used to initialize the bitstream buffers.

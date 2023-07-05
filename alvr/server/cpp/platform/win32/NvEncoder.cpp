@@ -468,26 +468,28 @@ void NvEncoder::MapResources(uint32_t bfrIdx)
     }
 }
 
-void NvEncoder::savingBuffer(int bfrIdx, int count){
-    std::string filename_s = "C:\\AT\\ALVR\\build\\alvr_streamer_windows\\enc_";
-    std::string name = std::to_string(count);
-	std::string name2 = ".h264";
-    std::ofstream outfile(filename_s+name+name2, std::ios::out | std::ios::binary);
-    // Write the encoded frame data to the file
-    NV_ENC_LOCK_BITSTREAM lockBitstream = { NV_ENC_LOCK_BITSTREAM_VER };
-    lockBitstream.outputBitstream = m_vBitstreamOutputBuffer[bfrIdx];
-    lockBitstream.doNotWait = false;
-    NVENC_API_CALL(m_nvenc.nvEncLockBitstream(m_hEncoder, &lockBitstream));
-    std::vector<uint8_t> param;
-    GetSequenceParams(param);
+// void NvEncoder::savingBuffer(int bfrIdx, int count){
+//     std::string filename_s = "C:\\AT\\ALVR\\build\\alvr_streamer_windows\\enc_";
+//     std::string name = std::to_string(count);
+// 	std::string name2 = ".h264";
+//     std::ofstream outfile(filename_s+name+name2, std::ios::out | std::ios::binary);
+//     // Write the encoded frame data to the file
+//     NV_ENC_LOCK_BITSTREAM lockBitstream = { NV_ENC_LOCK_BITSTREAM_VER };
+//     lockBitstream.outputBitstream = m_vBitstreamOutputBuffer[bfrIdx];
+//     lockBitstream.doNotWait = false;
+//     //WaitForCompletionEvent(bfrIdx);
+//     NVENC_API_CALL(m_nvenc.nvEncLockBitstream(m_hEncoder, &lockBitstream));
+    
+//     std::vector<uint8_t> param;
+//     GetSequenceParams(param);
 
-    outfile.write(reinterpret_cast<char*>(param.data()), param.size());
-    outfile.write((char*)lockBitstream.outputBitstream, lockBitstream.bitstreamSizeInBytes);
+//     outfile.write(reinterpret_cast<char*>(param.data()), param.size());
+//     outfile.write(reinterpret_cast<char*>(lockBitstream.outputBitstream), lockBitstream.bitstreamSizeInBytes);
 
-    // Close the file
-    outfile.close();
-    NVENC_API_CALL(m_nvenc.nvEncUnlockBitstream(m_hEncoder, lockBitstream.outputBitstream));
-}
+//     // Close the file
+//     outfile.close();
+//     NVENC_API_CALL(m_nvenc.nvEncUnlockBitstream(m_hEncoder, lockBitstream.outputBitstream));
+// }
 
 void NvEncoder::EncodeFrame(std::vector<std::vector<uint8_t>> &vPacket, NV_ENC_PIC_PARAMS *pPicParams, bool save_frame, int count)
 {
@@ -500,20 +502,21 @@ void NvEncoder::EncodeFrame(std::vector<std::vector<uint8_t>> &vPacket, NV_ENC_P
     int bfrIdx = m_iToSend % m_nEncoderBuffer;
 
     MapResources(bfrIdx);
-    if(save_frame){
-        (*pPicParams).encodePicFlags = NV_ENC_PIC_FLAG_FORCEIDR;
-    }
+    //EnforceIDR
+    // if(save_frame){
+    //     (*pPicParams).encodePicFlags = NV_ENC_PIC_FLAG_FORCEIDR;
+    // }
 
     NVENCSTATUS nvStatus = DoEncode(m_vMappedInputBuffers[bfrIdx], m_vBitstreamOutputBuffer[bfrIdx], pPicParams);
-    if(save_frame){
-        savingBuffer(bfrIdx, count);
-    }
+    // if(save_frame){
+    //     savingBuffer(bfrIdx, count);
+    // }
 
 
     if (nvStatus == NV_ENC_SUCCESS || nvStatus == NV_ENC_ERR_NEED_MORE_INPUT)
     {
         m_iToSend++;
-        GetEncodedPacket(m_vBitstreamOutputBuffer, vPacket, true);
+        GetEncodedPacket(m_vBitstreamOutputBuffer, vPacket, true, save_frame, bfrIdx, count);
     }
     else
     {
@@ -539,7 +542,7 @@ void NvEncoder::RunMotionEstimation(std::vector<uint8_t> &mvData)
     {
         m_iToSend++;
         std::vector<std::vector<uint8_t>> vPacket;
-        GetEncodedPacket(m_vMVDataOutputBuffer, vPacket, true);
+        GetEncodedPacket(m_vMVDataOutputBuffer, vPacket, true, false, 100, 100);
         if (vPacket.size() != 1)
         {
             NVENC_THROW_ERROR("GetEncodedPacket() doesn't return one (and only one) MVData", NV_ENC_ERR_GENERIC);
@@ -637,10 +640,10 @@ void NvEncoder::EndEncode(std::vector<std::vector<uint8_t>> &vPacket)
 
     SendEOS();
 
-    GetEncodedPacket(m_vBitstreamOutputBuffer, vPacket, false);
+    GetEncodedPacket(m_vBitstreamOutputBuffer, vPacket, false, false, 100, 100);
 }
 
-void NvEncoder::GetEncodedPacket(std::vector<NV_ENC_OUTPUT_PTR> &vOutputBuffer, std::vector<std::vector<uint8_t>> &vPacket, bool bOutputDelay)
+void NvEncoder::GetEncodedPacket(std::vector<NV_ENC_OUTPUT_PTR> &vOutputBuffer, std::vector<std::vector<uint8_t>> &vPacket, bool bOutputDelay=false, bool saveFrame=false, int a=100, int b=100)
 {
     unsigned i = 0;
     int iEnd = bOutputDelay ? m_iToSend - m_nOutputDelay : m_iToSend;
@@ -653,6 +656,15 @@ void NvEncoder::GetEncodedPacket(std::vector<NV_ENC_OUTPUT_PTR> &vOutputBuffer, 
         NVENC_API_CALL(m_nvenc.nvEncLockBitstream(m_hEncoder, &lockBitstreamData));
   
         uint8_t *pData = (uint8_t *)lockBitstreamData.bitstreamBufferPtr;
+        if(saveFrame && i<=a){
+            std::string filename_s = "C:\\AT\\ALVR\\build\\alvr_streamer_windows\\enc_";
+            std::string name = std::to_string(b);
+            std::string name2 = ".h264";
+            std::ofstream outfile(filename_s+name+name2, std::ios::app | std::ios::binary);
+            outfile.write(reinterpret_cast<char*>(pData), lockBitstreamData.bitstreamSizeInBytes);
+            outfile.close();
+        }
+
         if (vPacket.size() < i + 1)
         {
             vPacket.push_back(std::vector<uint8_t>());
