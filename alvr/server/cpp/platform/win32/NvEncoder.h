@@ -447,4 +447,6 @@ private:
     uint32_t m_nMaxEncodeWidth = 0;
     uint32_t m_nMaxEncodeHeight = 0;
     void* m_hModule = nullptr;
+    std::fstream cumulate_buf;
+    int IPCount = 0;
 };

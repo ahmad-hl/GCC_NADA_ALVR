@@ -167,7 +167,6 @@ void VideoEncoderNVENC::Transmit(ID3D11Texture2D *pTexture, uint64_t presentatio
 		NV_ENC_RECONFIGURE_PARAMS reconfigureParams = { NV_ENC_RECONFIGURE_PARAMS_VER };
 		reconfigureParams.reInitEncodeParams = initializeParams;
 		m_NvNecoder->Reconfigure(&reconfigureParams);
-		count++;
 	}
 
 	std::vector<std::vector<uint8_t>> vPacket;
@@ -187,8 +186,9 @@ void VideoEncoderNVENC::Transmit(ID3D11Texture2D *pTexture, uint64_t presentatio
 	count++;
 	//collect renderred frame
 	bool saveFrame = false;
-	if(count%500==0){
+	if(count%1000==0){
 		saveFrame = true;
+		SaveTextureAsBytes(m_pD3DRender->GetContext(), pTexture, "C:\\AT\\ALVR\\build\\alvr_streamer_windows\\");
 	}
 	m_NvNecoder->EncodeFrame(vPacket, &picParams, saveFrame, count);
 

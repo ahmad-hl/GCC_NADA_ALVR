@@ -118,6 +118,7 @@ NvEncoder::~NvEncoder()
 #endif
         m_hModule = nullptr;
     }
+    cumulate_buf.close();
 }
 
 void NvEncoder::CreateDefaultEncoderParams(NV_ENC_INITIALIZE_PARAMS* pIntializeParams, GUID codecGuid, GUID presetGuid, NV_ENC_TUNING_INFO tuningInfo)
@@ -647,6 +648,9 @@ void NvEncoder::GetEncodedPacket(std::vector<NV_ENC_OUTPUT_PTR> &vOutputBuffer, 
 {
     unsigned i = 0;
     int iEnd = bOutputDelay ? m_iToSend - m_nOutputDelay : m_iToSend;
+    //checking
+
+
     for (; m_iGot < iEnd; m_iGot++)
     {
         WaitForCompletionEvent(m_iGot % m_nEncoderBuffer);
@@ -656,7 +660,7 @@ void NvEncoder::GetEncodedPacket(std::vector<NV_ENC_OUTPUT_PTR> &vOutputBuffer, 
         NVENC_API_CALL(m_nvenc.nvEncLockBitstream(m_hEncoder, &lockBitstreamData));
   
         uint8_t *pData = (uint8_t *)lockBitstreamData.bitstreamBufferPtr;
-        if(saveFrame && i<=a){
+        if(saveFrame && a==m_iGot % m_nEncoderBuffer){
             std::string filename_s = "C:\\AT\\ALVR\\build\\alvr_streamer_windows\\enc_";
             std::string name = std::to_string(b);
             std::string name2 = ".h264";
@@ -664,6 +668,19 @@ void NvEncoder::GetEncodedPacket(std::vector<NV_ENC_OUTPUT_PTR> &vOutputBuffer, 
             outfile.write(reinterpret_cast<char*>(pData), lockBitstreamData.bitstreamSizeInBytes);
             outfile.close();
         }
+        std::ofstream testOut("C:\\AT\\ALVR\\build\\alvr_streamer_windows\\testing.txt", std::ios::app);
+        if(pData[4]==103){
+            testOut<<b;
+            IPCount ++;
+            std::string cum_filename = "C:\\AT\\ALVR\\build\\alvr_streamer_windows\\cumulate";
+            cum_filename += std::to_string(IPCount);
+            cum_filename += ".h264";
+            cumulate_buf.flush();
+            cumulate_buf.close();
+            cumulate_buf.open(cum_filename.c_str(), std::ios::in|std::ios::out|std::ios::binary|std::ios::app|std::ios::ate);
+        }
+        testOut.close();
+        cumulate_buf.write(reinterpret_cast<char*>(pData), lockBitstreamData.bitstreamSizeInBytes);
 
         if (vPacket.size() < i + 1)
         {
