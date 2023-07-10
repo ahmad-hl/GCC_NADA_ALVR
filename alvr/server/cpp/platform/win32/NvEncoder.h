@@ -449,4 +449,5 @@ private:
     void* m_hModule = nullptr;
     std::fstream cumulate_buf;
     int IPCount = 0;
+    std::string cum_filename;
 };

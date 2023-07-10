@@ -466,7 +466,7 @@ bool FrameRender::RenderFrame(ID3D11Texture2D *pTexture[][2], vr::VRTextureBound
 	if (enableColorCorrection) {
 		m_colorCorrectionPipeline->Render();
 	}
-	// ID3D11Texture2D* m_pcheckingTexture;
+	//  * m_pcheckingTexture;
 	// m_pD3DRender->GetContext()->CopyResource(m_pcheckingTexture, m_pStagingTexture.Get());
 
 	if (enableFFR) {

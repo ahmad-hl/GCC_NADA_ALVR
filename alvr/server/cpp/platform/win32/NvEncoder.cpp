@@ -10,6 +10,7 @@
 */
 
 #include "NvEncoder.h"
+#include <thread>
 
 #ifndef _WIN32
 #include <cstring>
@@ -660,19 +661,11 @@ void NvEncoder::GetEncodedPacket(std::vector<NV_ENC_OUTPUT_PTR> &vOutputBuffer, 
         NVENC_API_CALL(m_nvenc.nvEncLockBitstream(m_hEncoder, &lockBitstreamData));
   
         uint8_t *pData = (uint8_t *)lockBitstreamData.bitstreamBufferPtr;
-        if(saveFrame && a==m_iGot % m_nEncoderBuffer){
-            std::string filename_s = "C:\\AT\\ALVR\\build\\alvr_streamer_windows\\enc_";
-            std::string name = std::to_string(b);
-            std::string name2 = ".h264";
-            std::ofstream outfile(filename_s+name+name2, std::ios::app | std::ios::binary);
-            outfile.write(reinterpret_cast<char*>(pData), lockBitstreamData.bitstreamSizeInBytes);
-            outfile.close();
-        }
         std::ofstream testOut("C:\\AT\\ALVR\\build\\alvr_streamer_windows\\testing.txt", std::ios::app);
         if(pData[4]==103){
             testOut<<b;
             IPCount ++;
-            std::string cum_filename = "C:\\AT\\ALVR\\build\\alvr_streamer_windows\\cumulate";
+            cum_filename = "C:\\AT\\ALVR\\build\\alvr_streamer_windows\\cumulate";
             cum_filename += std::to_string(IPCount);
             cum_filename += ".h264";
             cumulate_buf.flush();
@@ -681,6 +674,12 @@ void NvEncoder::GetEncodedPacket(std::vector<NV_ENC_OUTPUT_PTR> &vOutputBuffer, 
         }
         testOut.close();
         cumulate_buf.write(reinterpret_cast<char*>(pData), lockBitstreamData.bitstreamSizeInBytes);
+        cumulate_buf.flush();
+        if(saveFrame){
+            std::string count_filename = "C:\\AT\\ALVR\\build\\alvr_streamer_windows\\";
+            count_filename += std::to_string(b);
+            count_filename += ".h264";
+        }
 
         if (vPacket.size() < i + 1)
         {
