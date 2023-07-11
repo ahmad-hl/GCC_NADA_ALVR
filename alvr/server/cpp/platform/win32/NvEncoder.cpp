@@ -673,13 +673,13 @@ void NvEncoder::GetEncodedPacket(std::vector<NV_ENC_OUTPUT_PTR> &vOutputBuffer, 
             cumulate_buf.open(cum_filename.c_str(), std::ios::in|std::ios::out|std::ios::binary|std::ios::app|std::ios::ate);
         }
         testOut.close();
-        cumulate_buf.write(reinterpret_cast<char*>(pData), lockBitstreamData.bitstreamSizeInBytes);
-        cumulate_buf.flush();
-        if(saveFrame){
-            std::string count_filename = "C:\\AT\\ALVR\\build\\alvr_streamer_windows\\";
-            count_filename += std::to_string(b);
-            count_filename += ".h264";
-        }
+        // cumulate_buf.write(reinterpret_cast<char*>(pData), lockBitstreamData.bitstreamSizeInBytes);
+        // cumulate_buf.flush();
+        // if(saveFrame){
+        //     std::string count_filename = "C:\\AT\\ALVR\\build\\alvr_streamer_windows\\";
+        //     count_filename += std::to_string(b);
+        //     count_filename += ".h264";
+        // }
 
         if (vPacket.size() < i + 1)
         {
