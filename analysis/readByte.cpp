@@ -30,8 +30,10 @@ void DisplayTextureAsPNG(const char* filename)
     file.close();
 
     // Get texture dimensions
-    int width = 1184*2; // Replace with actual width
-    int height = 1120; // Replace with actual height
+    //int width = 1184*2; // Replace with actual width
+    int width = 2144*2;
+    //int height = 1120; // Replace with actual height
+    int height = 1120;
 
     // int width = fileSize / 3;
     // int height = 1;
@@ -48,6 +50,6 @@ void DisplayTextureAsPNG(const char* filename)
 
 int main()
 {
-    DisplayTextureAsPNG("1492.bytes");
+    DisplayTextureAsPNG("texture.bytes");
     return 0;
 }

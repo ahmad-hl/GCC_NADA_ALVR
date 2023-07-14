@@ -1,4 +1,5 @@
 #include "CEncoder.h"
+#include "../../analyze_used/helper_f.h"
 
 
 		CEncoder::CEncoder()

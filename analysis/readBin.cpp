@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
     size_t buf_size;
 
     // Open the input file containing the encoded data
-    infile = fopen("enc_1700.h264", "rb");
+    infile = fopen("enc_2000.h264", "rb");
     if (!infile) {
         fprintf(stderr, "Failed to open input file\n");
         return 1;
