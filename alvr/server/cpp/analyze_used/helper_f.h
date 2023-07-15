@@ -1,60 +1,18 @@
+#include <iostream>
+#include <fstream> 
+#include "../platform/win32/NvEncoderD3D11.h"
+
 #ifndef HELPERS_H
 #define HELPERS_H
 
-#include <iostream>
-#include <fstream> 
+extern int frame_count;
+extern int save_frame_feq;
+extern std::string filename_s;
 
-int frame_count = 0;
-int save_frame_feq = 500;
-
-void add_frame_count(){
-    frame_count++;
-}
-
-int get_frame_count(){
-    return frame_count;
-}
-
-int get_save_frame_feq(){
-    return save_frame_feq;
-}
-
-void SaveTextureAsBytes(ID3D11DeviceContext* context, ID3D11Texture2D* texture, std::string filename_s)
-{
-	ID3D11Device* device;
-	texture->GetDevice(&device);
-    // Get texture description
-    D3D11_TEXTURE2D_DESC desc;
-    texture->GetDesc(&desc);
-
-    // Create staging texture
-    D3D11_TEXTURE2D_DESC stagingDesc = desc;
-    stagingDesc.Usage = D3D11_USAGE_STAGING;
-    stagingDesc.BindFlags = 0;
-    stagingDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
-    ID3D11Texture2D* stagingTexture;
-    device->CreateTexture2D(&stagingDesc, nullptr, &stagingTexture);
-
-    // Copy texture to staging texture
-    context->CopyResource(stagingTexture, texture);
-
-    // Map staging texture to CPU memory
-    D3D11_MAPPED_SUBRESOURCE mappedResource;
-    context->Map(stagingTexture, 0, D3D11_MAP_READ, 0, &mappedResource);
-
-    // Write texture to byte file
-	std::string name = std::to_string(count) ;
-	std::string name2 = ".bytes";
-	const char* filename = (filename_s+name+name2).c_str();
-    std::ofstream file(filename, std::ios::out | std::ios::binary);
-    file.write((char*)mappedResource.pData, mappedResource.DepthPitch);
-
-    // Unmap staging texture
-    context->Unmap(stagingTexture, 0);
-
-    // Release resources
-    stagingTexture->Release();
-}
-
+void add_frame_count();
+int get_frame_count();
+int get_save_frame_feq();
+std::string get_path_head();
+void SaveTextureAsBytes(ID3D11DeviceContext* context, ID3D11Texture2D* texture, std::string name);
 
 #endif

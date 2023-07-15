@@ -5,6 +5,7 @@
 #include "alvr_server/bindings.h"
 #include <fstream>
 #include <iostream>
+#include "../../analyze_used/helper_f.h"
 
 extern uint64_t g_DriverTestMode;
 
@@ -527,9 +528,15 @@ void SaveTextureAsBytes2(ID3D11DeviceContext* context, ID3D11Texture2D* texture,
 
 ComPtr<ID3D11Texture2D> FrameRender::GetTexture(bool saving)
 {
-	count2 ++;
-	if(count2 == 1000){
-		SaveTextureAsBytes2(m_pD3DRender->GetContext(), m_pCheckingTexture, "abc");
+	if(saving&&get_frame_count()%get_save_frame_feq()==0){
+		std::string o1 = "oframe_";
+		o1 += std::to_string(get_frame_count());
+		o1 += ".bytes";
+		SaveTextureAsBytes(m_pD3DRender->GetContext(), m_pCheckingTexture, o1);
+		std::string r1 = "rframe_";
+		r1 += std::to_string(get_frame_count());
+		r1 += ".bytes";
+		SaveTextureAsBytes(m_pD3DRender->GetContext(), m_pStagingTexture.Get(), r1);
 	}
 	return m_pStagingTexture;
 }

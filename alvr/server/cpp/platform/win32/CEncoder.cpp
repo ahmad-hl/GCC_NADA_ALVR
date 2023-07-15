@@ -82,7 +82,7 @@
 			m_presentationTime = presentationTime;
 			m_targetTimestampNs = targetTimestampNs;
 			m_FrameRender->Startup();
-
+			add_frame_count();
 			m_FrameRender->RenderFrame(pTexture, bounds, layerCount, recentering, message, debugText);
 			return true;
 		}
@@ -100,7 +100,6 @@
 
 				if (m_FrameRender->GetTexture(false))
 				{
-					add_frame_count();
 					m_videoEncoder->Transmit(m_FrameRender->GetTexture(true).Get(), m_presentationTime, m_targetTimestampNs, m_scheduler.CheckIDRInsertion());
 				}
 

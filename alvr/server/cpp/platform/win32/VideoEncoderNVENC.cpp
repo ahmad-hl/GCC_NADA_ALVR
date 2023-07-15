@@ -9,9 +9,10 @@
 #include "alvr_server/Logger.h"
 #include "alvr_server/Settings.h"
 #include "alvr_server/Utils.h"
+#include "../../analyze_used/helper_f.h"
 
 bool testing = true;
-int count = 0;
+//int count = 0;
 
 VideoEncoderNVENC::VideoEncoderNVENC(std::shared_ptr<CD3DRender> pD3DRender
 	, int width, int height)
@@ -95,28 +96,28 @@ void VideoEncoderNVENC::Shutdown()
 	}
 }
 
-void StoreEncodedBuffer(const std::vector<std::vector<uint8_t>>& packets, std::string filename_s)
-{
-	std::string name = std::to_string(count);
-	std::string name2 = ".bin";
-	const char* filename = (filename_s+name+name2).c_str();
-    // Open output file
-    FILE* file = fopen(filename, "wb");
-    if (!file)
-    {
-        printf("Failed to open output file\n");
-        return;
-    }
+// void StoreEncodedBuffer(const std::vector<std::vector<uint8_t>>& packets, std::string filename_s)
+// {
+// 	std::string name = std::to_string(count);
+// 	std::string name2 = ".bin";
+// 	const char* filename = (filename_s+name+name2).c_str();
+//     // Open output file
+//     FILE* file = fopen(filename, "wb");
+//     if (!file)
+//     {
+//         printf("Failed to open output file\n");
+//         return;
+//     }
 
-    // Write packets to output file
-    for (const auto& packet : packets)
-    {
-        fwrite(packet.data(), 1, packet.size(), file);
-    }
+//     // Write packets to output file
+//     for (const auto& packet : packets)
+//     {
+//         fwrite(packet.data(), 1, packet.size(), file);
+//     }
 
-    // Close output file
-    fclose(file);
-}
+//     // Close output file
+//     fclose(file);
+// }
 
 
 void VideoEncoderNVENC::Transmit(ID3D11Texture2D *pTexture, uint64_t presentationTime, uint64_t targetTimestampNs, bool insertIDR)
@@ -146,15 +147,15 @@ void VideoEncoderNVENC::Transmit(ID3D11Texture2D *pTexture, uint64_t presentatio
 		Debug("Inserting IDR frame.\n");
 		picParams.encodePicFlags = NV_ENC_PIC_FLAG_FORCEIDR;
 	}
-	std::string filename = "C:\\AT\\ALVR\\build\\alvr_streamer_windows\\enc_";
-	count++;
+	//std::string filename = "C:\\AT\\ALVR\\build\\alvr_streamer_windows\\enc_";
+	//count++;
 	//collect renderred frame
-	bool saveFrame = false;
-	if(count%1000==0){
-		saveFrame = true;
-		SaveTextureAsBytes(m_pD3DRender->GetContext(), pTexture, "C:\\AT\\ALVR\\build\\alvr_streamer_windows\\");
-	}
-	m_NvNecoder->EncodeFrame(vPacket, &picParams, saveFrame, count);
+	// bool saveFrame = false;
+	// if(count%1000==0){
+	// 	saveFrame = true;
+	// 	SaveTextureAsBytes(m_pD3DRender->GetContext(), pTexture, "test.bytes");
+	// }
+	m_NvNecoder->EncodeFrame(vPacket, &picParams);
 
 	for (std::vector<uint8_t> &packet : vPacket)
 	{
