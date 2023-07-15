@@ -38,7 +38,7 @@ impl Default for HistoryFrame {
     }
 }
 
-fn write_latency_to_csv(filename: &str, latency_values: [String; 9]) -> Result<(), Box<dyn Error>> {
+fn write_latency_to_csv(filename: &str, latency_values: [String; 10]) -> Result<(), Box<dyn Error>> {
     let mut file = OpenOptions::new().write(true).append(true).open(filename)?;
     let mut writer = Writer::from_writer(file);
 
@@ -53,6 +53,7 @@ fn write_latency_to_csv(filename: &str, latency_values: [String; 9]) -> Result<(
         &latency_values[6],
         &latency_values[7],
         &latency_values[8],
+        &latency_values[9],
     ])?;
 
     Ok(())
@@ -75,6 +76,7 @@ pub struct StatisticsManager {
     total_pipeline_latency_average: SlidingWindowAverage<Duration>,
     last_vsync_time: Instant,
     frame_interval: Duration,
+    statistics_start_timestamp:Instant,
 }
 
 impl StatisticsManager {
@@ -106,6 +108,7 @@ impl StatisticsManager {
             ),
             last_vsync_time: Instant::now(),
             frame_interval: nominal_server_frame_interval,
+            statistics_start_timestamp:Instant::now(),
         }
     }
 
@@ -294,8 +297,12 @@ impl StatisticsManager {
             //let mut bdw=bandwidth.to_string();
             //let mut plr=(client_stats.plr*100.0).to_string()+"%"+"\t";//pakcet loss rate record every second
             let mut bdw=(current_bitrate as f64)/(1.0-client_stats.plr)/((network_latency.as_secs_f32()*1000.)as f64);//bitrate/(1-plr)/network latency
-            let latency_strings=[interval_trackingReceived_framePresentInVirtualDevice,interval_framePresentInVirtualDevice_frameComposited,interval_frameComposited_VideoEncoded,interval_VideoReceivedByClient_VideoDecoded,interval_network,interval_total_pipeline,bitrate_statistics,plr,bdw.to_string()];
-            write_latency_to_csv("statistics.csv", latency_strings);
+            let t1=Instant::now();
+            let mut t1_start_duration=((t1-self.statistics_start_timestamp).as_secs_f32()*1000.).to_string();
+
+            let latency_strings=[interval_trackingReceived_framePresentInVirtualDevice,interval_framePresentInVirtualDevice_frameComposited,interval_frameComposited_VideoEncoded,interval_VideoReceivedByClient_VideoDecoded,interval_network,interval_total_pipeline,bitrate_statistics,plr,bdw.to_string(),t1_start_duration];
+            
+            write_latency_to_csv("C:\\AT\\ALVR\\build\\alvr_streamer_windows\\statistics.csv", latency_strings);
             //let mut params=BITRATE_MANAGER.lock().get_encoder_params(config);
 
             //let mut string2=((network_latency.as_secs_f32()*1000.).to_string())+"\t";
