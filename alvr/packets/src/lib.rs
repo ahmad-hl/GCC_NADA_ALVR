@@ -204,8 +204,10 @@ pub struct ClientStatistics {
     pub rendering: Duration,
     pub vsync_queue: Duration,
     pub total_pipeline_latency: Duration,
+    pub shard_loss_rate:f64,
     pub plr: f64,
     pub flag_plr: bool,
+    pub flag_slr:bool,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

@@ -540,8 +540,12 @@ fn create_csv_file(filename: &str) -> Result<(), Box<dyn Error>> {
         "decode latency",
         "network latency",
         "total pipeline latency",
-        "bitrate(bps)",
+        "target bitrate",
         "plr",
+        "bitrate(bps)",
+        "total packets send",
+        "average packt size",
+        "shard loss rate in one frame",
     ])?;
 
     Ok(())

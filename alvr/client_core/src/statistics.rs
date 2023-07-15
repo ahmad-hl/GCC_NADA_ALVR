@@ -120,6 +120,20 @@ impl StatisticsManager {
             self.prev_vsync = vsync;
         }
     }
+    pub fn report_shard_loss_rate(&mut self, target_timestamp: Duration,slr: f64)
+    {
+        if let Some(frame) = self
+            .history_buffer
+            .iter_mut()
+            .find(|frame| frame.client_stats.target_timestamp == target_timestamp)
+        {
+            if !frame.client_stats.flag_slr{
+                frame.client_stats.shard_loss_rate=slr;
+                frame.client_stats.flag_slr=true;
+            }
+            
+        }
+    }
     pub fn report_plr(&mut self, target_timestamp: Duration,plr: f64)
     {
         if let Some(frame) = self
@@ -127,10 +141,14 @@ impl StatisticsManager {
             .iter_mut()
             .find(|frame| frame.client_stats.target_timestamp == target_timestamp)
         {
-            frame.client_stats.plr=plr;
-            frame.client_stats.flag_plr=true;
+            if !frame.client_stats.flag_plr{
+                frame.client_stats.plr=plr;
+                frame.client_stats.flag_plr=true;
+            }
+            
         }
     }
+
 
     pub fn summary(&self, target_timestamp: Duration) -> Option<ClientStatistics> {
         self.history_buffer

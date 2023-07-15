@@ -416,6 +416,11 @@ async fn stream_pipeline(
                     total_packets+=1;
                     stats.report_video_packet_received(header.timestamp);
                 }
+                if receiver_buffer.had_packet_loss(){
+                    if let Some(stats) = &mut *STATISTICS_MANAGER.lock() {
+                        stats.report_shard_loss_rate(header.timestamp, receiver_buffer.shard_loss_rate);
+                    }
+                }
 
                 if header.is_idr {
                     stream_corrupted = false;
@@ -425,6 +430,7 @@ async fn stream_pipeline(
                     if let Some(sender) = &*CONTROL_CHANNEL_SENDER.lock() {
                         sender.send(ClientControlPacket::RequestIdr).ok();
                     }
+                    
                     warn!("Network dropped video packet");
                 }
                 let elapsed = last_time.elapsed();
@@ -437,6 +443,7 @@ async fn stream_pipeline(
                     //println!("Packet loss rate: {:.2}%", packet_loss_rate * 100.0);
                     if let Some(stats) = &mut *STATISTICS_MANAGER.lock() {
                         
+                         
                         stats.report_plr(header.timestamp, packet_loss_rate);
                     }
                     // Reset counters and timer
@@ -456,6 +463,18 @@ async fn stream_pipeline(
                 } else {
                     warn!("Dropped video packet. Reason: Waiting for IDR frame")
                 }
+                // if let Some(stats) = &mut *STATISTICS_MANAGER.lock() {
+                        
+                //     if receiver_buffer.skipping_loss{
+                //         stats.report_plr(header.timestamp, receiver_buffer.packet_loss_count);
+                //         receiver_buffer.packet_loss_count=0;
+                //     }
+                //     else {
+                //        stats.report_plr(header.timestamp, receiver_buffer.packet_loss_count);
+                //        receiver_buffer.packet_loss_count=0;
+                //     }
+                    
+                // }
             }
         }
     };
