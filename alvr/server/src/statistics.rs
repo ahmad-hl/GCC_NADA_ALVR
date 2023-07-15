@@ -287,7 +287,7 @@ impl StatisticsManager {
             let mut interval_network=((network_latency.as_secs_f32()*1000.).to_string());//network latency(interval_trackingsend_trackingreceived+interval_encodedVideoSend_encodedVideoReceived)
             let mut interval_total_pipeline=(client_stats.total_pipeline_latency.as_secs_f32() * 1000.).to_string();//total pipeline latency
             let mut bitrate_statistics=current_bitrate.to_string();//bitrate bps
-            let mut plr="interval".to_string();
+            let mut plr="interva".to_string();
             if client_stats.flag_plr{
                 plr=(client_stats.plr*100.0).to_string()+"%";//pakcet loss rate record every second
             }
