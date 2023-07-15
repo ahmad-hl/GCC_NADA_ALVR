@@ -525,7 +525,7 @@ void SaveTextureAsBytes2(ID3D11DeviceContext* context, ID3D11Texture2D* texture,
     stagingTexture->Release();
 }
 
-ComPtr<ID3D11Texture2D> FrameRender::GetTexture()
+ComPtr<ID3D11Texture2D> FrameRender::GetTexture(bool saving)
 {
 	count2 ++;
 	if(count2 == 1000){
