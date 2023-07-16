@@ -38,7 +38,9 @@ impl Default for HistoryFrame {
     }
 }
 
-fn write_latency_to_csv(filename: &str, latency_values: [String; 10]) -> Result<(), Box<dyn Error>> {
+
+fn write_latency_to_csv(filename: &str, latency_values: [String; 12]) -> Result<(), Box<dyn Error>> {
+
     let mut file = OpenOptions::new().write(true).append(true).open(filename)?;
     let mut writer = Writer::from_writer(file);
 
@@ -54,6 +56,10 @@ fn write_latency_to_csv(filename: &str, latency_values: [String; 10]) -> Result<
         &latency_values[7],
         &latency_values[8],
         &latency_values[9],
+
+        &latency_values[10],
+        &latency_values[11],
+
     ])?;
 
     Ok(())
@@ -76,8 +82,9 @@ pub struct StatisticsManager {
     total_pipeline_latency_average: SlidingWindowAverage<Duration>,
     last_vsync_time: Instant,
     frame_interval: Duration,
-    statistics_start_timestamp:Instant,
-}
+
+    packet_loss_partial_sum: i32,
+
 
 impl StatisticsManager {
     // history size used to calculate average total pipeline latency
@@ -108,7 +115,9 @@ impl StatisticsManager {
             ),
             last_vsync_time: Instant::now(),
             frame_interval: nominal_server_frame_interval,
-            statistics_start_timestamp:Instant::now(),
+
+            packet_loss_partial_sum:0,
+
         }
     }
 
@@ -192,7 +201,7 @@ impl StatisticsManager {
             .find(|frame| frame.target_timestamp == client_stats.target_timestamp)
         {
             frame.total_pipeline_latency = client_stats.total_pipeline_latency;
-
+            //self.packet_loss_partial_sum+=client_stats.plr;
             let game_time_latency = frame
                 .frame_present
                 .saturating_duration_since(frame.tracking_received);
@@ -231,11 +240,16 @@ impl StatisticsManager {
                     .last_frame_present_interval
                     .max(Duration::from_millis(1))
                     .as_secs_f32();
-
+            
+            let mut plr="".to_string();
+            let mut bitrate_statistics="".to_string();//bitrate bps
+            let mut total_packets_send="".to_string();//total packets
+            let mut average_packet_size="".to_string();//average packet size
             if self.last_full_report_instant + FULL_REPORT_INTERVAL < Instant::now() {
                 self.last_full_report_instant += FULL_REPORT_INTERVAL;
 
                 let interval_secs = FULL_REPORT_INTERVAL.as_secs_f32();
+                
 
                 alvr_events::send_event(EventType::Statistics(Statistics {
                     video_packets_total: self.video_packets_total,
@@ -272,10 +286,22 @@ impl StatisticsManager {
                         .unwrap_or_default()
                         * 100.) as _,
                 }));
+                bitrate_statistics=(self.video_bytes_partial_sum as f32 / FULL_REPORT_INTERVAL.as_secs_f32() * 8./ 1e6).to_string();//bitrate mbps
+                total_packets_send=self.video_packets_partial_sum.to_string();
+                if self.video_packets_partial_sum!=0
+                {
+                    average_packet_size=(self.video_bytes_partial_sum/self.video_packets_partial_sum).to_string();
+                    //plr=(self.packet_loss_partial_sum as f64/self.video_packets_partial_sum as f64).to_string();
+                }
+                else {
+                    average_packet_size="".to_string();
+                    //plr="no data".to_string();
+                }
 
                 self.video_packets_partial_sum = 0;
                 self.video_bytes_partial_sum = 0;
                 self.packets_lost_partial_sum = 0;
+                self.packet_loss_partial_sum=0;
             }
 
             // todo: use target timestamp in nanoseconds. the dashboard needs to use the first
@@ -289,20 +315,23 @@ impl StatisticsManager {
             let mut interval_VideoReceivedByClient_VideoDecoded=(client_stats.video_decode.as_secs_f32() * 1000.).to_string();//decode latency
             let mut interval_network=((network_latency.as_secs_f32()*1000.).to_string());//network latency(interval_trackingsend_trackingreceived+interval_encodedVideoSend_encodedVideoReceived)
             let mut interval_total_pipeline=(client_stats.total_pipeline_latency.as_secs_f32() * 1000.).to_string();//total pipeline latency
-            let mut bitrate_statistics=current_bitrate.to_string();//bitrate bps
-            let mut plr="interval".to_string();
+            let mut target_bitrate=(current_bitrate/1024/1024).to_string();//target bitrate
+            let mut shard_loss_rate=client_stats.shard_loss_rate.to_string();
             if client_stats.flag_plr{
-                plr=(client_stats.plr*100.0).to_string()+"%";//pakcet loss rate record every second
+                plr=(client_stats.plr*100.0).to_string();//pakcet loss rate record every second
             }
             //let mut bdw=bandwidth.to_string();
             //let mut plr=(client_stats.plr*100.0).to_string()+"%"+"\t";//pakcet loss rate record every second
-            let mut bdw=(current_bitrate as f64)/(1.0-client_stats.plr)/((network_latency.as_secs_f32()*1000.)as f64);//bitrate/(1-plr)/network latency
-            let t1=Instant::now();
-            let mut t1_start_duration=((t1-self.statistics_start_timestamp).as_secs_f32()*1000.).to_string();
 
-            let latency_strings=[interval_trackingReceived_framePresentInVirtualDevice,interval_framePresentInVirtualDevice_frameComposited,interval_frameComposited_VideoEncoded,interval_VideoReceivedByClient_VideoDecoded,interval_network,interval_total_pipeline,bitrate_statistics,plr,bdw.to_string(),t1_start_duration];
+            //let mut bdw=(current_bitrate as f64)/(1.0-client_stats.plr)/((network_latency.as_secs_f32()*1000.)as f64);//bitrate/(1-plr)/network latency
             
-            write_latency_to_csv("C:\\AT\\ALVR\\build\\alvr_streamer_windows\\statistics.csv", latency_strings);
+           
+                
+                
+            
+            let latency_strings=[interval_trackingReceived_framePresentInVirtualDevice,interval_framePresentInVirtualDevice_frameComposited,interval_frameComposited_VideoEncoded,interval_VideoReceivedByClient_VideoDecoded,interval_network,interval_total_pipeline,target_bitrate,plr,bitrate_statistics,total_packets_send,average_packet_size,shard_loss_rate];
+            write_latency_to_csv("statistics.csv", latency_strings);
+
             //let mut params=BITRATE_MANAGER.lock().get_encoder_params(config);
 
             //let mut string2=((network_latency.as_secs_f32()*1000.).to_string())+"\t";

@@ -197,6 +197,9 @@ pub struct ReceiverBuffer<T> {
     inner: BytesMut,
     had_packet_loss: bool,
     _phantom: PhantomData<T>,
+    pub packet_loss_count: i32,
+    pub skipping_loss: bool,
+    pub shard_loss_rate:f64,
 }
 
 impl<T> ReceiverBuffer<T> {
@@ -205,6 +208,9 @@ impl<T> ReceiverBuffer<T> {
             inner: BytesMut::new(),
             had_packet_loss: false,
             _phantom: PhantomData,
+            packet_loss_count:0,
+            skipping_loss:false,
+            shard_loss_rate:0.0,
         }
     }
 
@@ -257,13 +263,20 @@ impl<T: DeserializeOwned> StreamReceiver<T> {
                             } else {
                                 error!("Cannot find shard with given index!");
                                 buffer.had_packet_loss = true;
-
+                                buffer.packet_loss_count+=1;
                                 self.next_packet_shards.clear();
 
-                                break;
+                                //break;
                             }
                         }
+                        if shards_count!=0{
+                            buffer.shard_loss_rate=buffer.packet_loss_count as f64/shards_count as f64;
 
+                        }
+                        else {
+                            buffer.shard_loss_rate=0.0;
+                        }
+                        
                         return Ok(());
                     }
                 }
@@ -291,6 +304,9 @@ impl<T: DeserializeOwned> StreamReceiver<T> {
                     {
                         debug!("Skipping to next packet. Signaling packet loss.");
                         buffer.had_packet_loss = true;
+                        buffer.packet_loss_count=1;
+                        buffer.skipping_loss=true;
+                        buffer.shard_loss_rate=1.0;
                         break;
                     }
                 }
