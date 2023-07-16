@@ -38,7 +38,9 @@ impl Default for HistoryFrame {
     }
 }
 
+
 fn write_latency_to_csv(filename: &str, latency_values: [String; 12]) -> Result<(), Box<dyn Error>> {
+
     let mut file = OpenOptions::new().write(true).append(true).open(filename)?;
     let mut writer = Writer::from_writer(file);
 
@@ -54,8 +56,10 @@ fn write_latency_to_csv(filename: &str, latency_values: [String; 12]) -> Result<
         &latency_values[7],
         &latency_values[8],
         &latency_values[9],
+
         &latency_values[10],
         &latency_values[11],
+
     ])?;
 
     Ok(())
@@ -78,8 +82,9 @@ pub struct StatisticsManager {
     total_pipeline_latency_average: SlidingWindowAverage<Duration>,
     last_vsync_time: Instant,
     frame_interval: Duration,
+
     packet_loss_partial_sum: i32,
-}
+
 
 impl StatisticsManager {
     // history size used to calculate average total pipeline latency
@@ -110,7 +115,9 @@ impl StatisticsManager {
             ),
             last_vsync_time: Instant::now(),
             frame_interval: nominal_server_frame_interval,
+
             packet_loss_partial_sum:0,
+
         }
     }
 
@@ -315,6 +322,7 @@ impl StatisticsManager {
             }
             //let mut bdw=bandwidth.to_string();
             //let mut plr=(client_stats.plr*100.0).to_string()+"%"+"\t";//pakcet loss rate record every second
+
             //let mut bdw=(current_bitrate as f64)/(1.0-client_stats.plr)/((network_latency.as_secs_f32()*1000.)as f64);//bitrate/(1-plr)/network latency
             
            
@@ -323,6 +331,7 @@ impl StatisticsManager {
             
             let latency_strings=[interval_trackingReceived_framePresentInVirtualDevice,interval_framePresentInVirtualDevice_frameComposited,interval_frameComposited_VideoEncoded,interval_VideoReceivedByClient_VideoDecoded,interval_network,interval_total_pipeline,target_bitrate,plr,bitrate_statistics,total_packets_send,average_packet_size,shard_loss_rate];
             write_latency_to_csv("statistics.csv", latency_strings);
+
             //let mut params=BITRATE_MANAGER.lock().get_encoder_params(config);
 
             //let mut string2=((network_latency.as_secs_f32()*1000.).to_string())+"\t";

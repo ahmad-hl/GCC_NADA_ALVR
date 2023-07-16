@@ -930,7 +930,7 @@ async fn connection_pipeline(
         let mut receiver = stream_socket
             .subscribe_to_stream::<ClientStatistics>(STATISTICS)
             .await?;
-        let filename = "statistics.csv";
+        let filename = "C:\\AT\\ALVR\\build\\alvr_streamer_windows\\statistics.csv";
 
         // Create the CSV file and write the column names
         create_csv_file(filename);

@@ -9,9 +9,10 @@
 #include "alvr_server/Logger.h"
 #include "alvr_server/Settings.h"
 #include "alvr_server/Utils.h"
+#include "../../analyze_used/helper_f.h"
 
 bool testing = true;
-int count = 0;
+//int count = 0;
 
 VideoEncoderNVENC::VideoEncoderNVENC(std::shared_ptr<CD3DRender> pD3DRender
 	, int width, int height)
@@ -94,65 +95,29 @@ void VideoEncoderNVENC::Shutdown()
 		NalParseClose();
 	}
 }
-void SaveTextureAsBytes(ID3D11DeviceContext* context, ID3D11Texture2D* texture, std::string filename_s)
-{
-	ID3D11Device* device;
-	texture->GetDevice(&device);
-    // Get texture description
-    D3D11_TEXTURE2D_DESC desc;
-    texture->GetDesc(&desc);
 
-    // Create staging texture
-    D3D11_TEXTURE2D_DESC stagingDesc = desc;
-    stagingDesc.Usage = D3D11_USAGE_STAGING;
-    stagingDesc.BindFlags = 0;
-    stagingDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
-    ID3D11Texture2D* stagingTexture;
-    device->CreateTexture2D(&stagingDesc, nullptr, &stagingTexture);
+// void StoreEncodedBuffer(const std::vector<std::vector<uint8_t>>& packets, std::string filename_s)
+// {
+// 	std::string name = std::to_string(count);
+// 	std::string name2 = ".bin";
+// 	const char* filename = (filename_s+name+name2).c_str();
+//     // Open output file
+//     FILE* file = fopen(filename, "wb");
+//     if (!file)
+//     {
+//         printf("Failed to open output file\n");
+//         return;
+//     }
 
-    // Copy texture to staging texture
-    context->CopyResource(stagingTexture, texture);
+//     // Write packets to output file
+//     for (const auto& packet : packets)
+//     {
+//         fwrite(packet.data(), 1, packet.size(), file);
+//     }
 
-    // Map staging texture to CPU memory
-    D3D11_MAPPED_SUBRESOURCE mappedResource;
-    context->Map(stagingTexture, 0, D3D11_MAP_READ, 0, &mappedResource);
-
-    // Write texture to byte file
-	std::string name = std::to_string(count) ;
-	std::string name2 = ".bytes";
-	const char* filename = (filename_s+name+name2).c_str();
-    std::ofstream file(filename, std::ios::out | std::ios::binary);
-    file.write((char*)mappedResource.pData, mappedResource.DepthPitch);
-
-    // Unmap staging texture
-    context->Unmap(stagingTexture, 0);
-
-    // Release resources
-    stagingTexture->Release();
-}
-
-void StoreEncodedBuffer(const std::vector<std::vector<uint8_t>>& packets, std::string filename_s)
-{
-	std::string name = std::to_string(count);
-	std::string name2 = ".bin";
-	const char* filename = (filename_s+name+name2).c_str();
-    // Open output file
-    FILE* file = fopen(filename, "wb");
-    if (!file)
-    {
-        printf("Failed to open output file\n");
-        return;
-    }
-
-    // Write packets to output file
-    for (const auto& packet : packets)
-    {
-        fwrite(packet.data(), 1, packet.size(), file);
-    }
-
-    // Close output file
-    fclose(file);
-}
+//     // Close output file
+//     fclose(file);
+// }
 
 
 void VideoEncoderNVENC::Transmit(ID3D11Texture2D *pTexture, uint64_t presentationTime, uint64_t targetTimestampNs, bool insertIDR)
@@ -182,15 +147,15 @@ void VideoEncoderNVENC::Transmit(ID3D11Texture2D *pTexture, uint64_t presentatio
 		Debug("Inserting IDR frame.\n");
 		picParams.encodePicFlags = NV_ENC_PIC_FLAG_FORCEIDR;
 	}
-	std::string filename = "C:\\AT\\ALVR\\build\\alvr_streamer_windows\\enc_";
-	count++;
+	//std::string filename = "C:\\AT\\ALVR\\build\\alvr_streamer_windows\\enc_";
+	//count++;
 	//collect renderred frame
-	bool saveFrame = false;
-	if(count%1000==0){
-		saveFrame = true;
-		SaveTextureAsBytes(m_pD3DRender->GetContext(), pTexture, "C:\\AT\\ALVR\\build\\alvr_streamer_windows\\");
-	}
-	m_NvNecoder->EncodeFrame(vPacket, &picParams, saveFrame, count);
+	// bool saveFrame = false;
+	// if(count%1000==0){
+	// 	saveFrame = true;
+	// 	SaveTextureAsBytes(m_pD3DRender->GetContext(), pTexture, "test.bytes");
+	// }
+	m_NvNecoder->EncodeFrame(vPacket, &picParams);
 
 	for (std::vector<uint8_t> &packet : vPacket)
 	{
@@ -374,3 +339,4 @@ void VideoEncoderNVENC::FillEncodeConfig(NV_ENC_INITIALIZE_PARAMS &initializePar
 	encodeConfig.rcParams.rateControlMode = NV_ENC_PARAMS_RC_CONSTQP;
 	encodeConfig.rcParams.constQP = {40,40,40};
 }
+ 
