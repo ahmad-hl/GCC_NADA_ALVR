@@ -84,7 +84,7 @@ pub struct StatisticsManager {
     frame_interval: Duration,
 
     packet_loss_partial_sum: i32,
-
+}
 
 impl StatisticsManager {
     // history size used to calculate average total pipeline latency
