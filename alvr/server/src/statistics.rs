@@ -56,10 +56,8 @@ fn write_latency_to_csv(filename: &str, latency_values: [String; 12]) -> Result<
         &latency_values[7],
         &latency_values[8],
         &latency_values[9],
-
         &latency_values[10],
         &latency_values[11],
-
     ])?;
 
     Ok(())
@@ -330,7 +328,7 @@ impl StatisticsManager {
                 
             
             let latency_strings=[interval_trackingReceived_framePresentInVirtualDevice,interval_framePresentInVirtualDevice_frameComposited,interval_frameComposited_VideoEncoded,interval_VideoReceivedByClient_VideoDecoded,interval_network,interval_total_pipeline,target_bitrate,plr,bitrate_statistics,total_packets_send,average_packet_size,shard_loss_rate];
-            write_latency_to_csv("statistics.csv", latency_strings);
+            write_latency_to_csv("C:\\AT\\ALVR\\build\\alvr_streamer_windows\\statistics.csv", latency_strings);
 
             //let mut params=BITRATE_MANAGER.lock().get_encoder_params(config);
 

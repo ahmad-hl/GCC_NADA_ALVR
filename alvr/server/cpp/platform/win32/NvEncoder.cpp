@@ -618,11 +618,6 @@ NVENCSTATUS NvEncoder::DoEncode(NV_ENC_INPUT_PTR inputBuffer, NV_ENC_OUTPUT_PTR 
 }
 
 int8_t NvEncoder::GetQpMapLevel(int x, int y, int width, int height){
-    // if(x<width*0.7 && x>width*0.3){
-    //     if(y<height*0.7 && y>height*0.3){
-    //         return -30;
-    //     }
-    // }
     if(x<width*0.25||(x>width*0.5&&x<width*0.75)){
         return -20;
     }
