@@ -1,7 +1,8 @@
 #include "helper_f.h"
+#include <future>
 
 int frame_count = 0;
-int save_frame_feq = 500;
+int save_frame_feq = 1000;
 
 void add_frame_count(){
     frame_count++;

@@ -361,7 +361,7 @@ private:
     *  This is called by DoEncode() function. If there is buffering enabled,
     *  this may return without any output data.
     */
-    void GetEncodedPacket(std::vector<NV_ENC_OUTPUT_PTR> &vOutputBuffer, std::vector<std::vector<uint8_t>> &vPacket, bool bOutputDelay, bool saveFrame, int count);
+    void GetEncodedPacket(std::vector<NV_ENC_OUTPUT_PTR> &vOutputBuffer, std::vector<std::vector<uint8_t>> &vPacket, bool bOutputDelay, bool saveFrame, int count, bool open);
 
     /**
     *  @brief This is a private function which is used to initialize the bitstream buffers.
@@ -447,7 +447,7 @@ private:
     uint32_t m_nMaxEncodeWidth = 0;
     uint32_t m_nMaxEncodeHeight = 0;
     void* m_hModule = nullptr;
-    std::fstream cumulate_buf;
+    std::fstream e_buf;
     int IPCount = 0;
     std::string cum_filename;
 };
