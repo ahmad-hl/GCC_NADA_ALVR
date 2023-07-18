@@ -22,6 +22,7 @@ pub struct HistoryFrame {
     frame_composed: Instant,
     frame_encoded: Instant,
     total_pipeline_latency: Duration,
+    total_size_for_this_frame: usize,
 }
 
 impl Default for HistoryFrame {
@@ -34,12 +35,13 @@ impl Default for HistoryFrame {
             frame_composed: now,
             frame_encoded: now,
             total_pipeline_latency: Duration::ZERO,
+            total_size_for_this_frame:0,
         }
     }
 }
 
 
-fn write_latency_to_csv(filename: &str, latency_values: [String; 12]) -> Result<(), Box<dyn Error>> {
+fn write_latency_to_csv(filename: &str, latency_values: [String; 13]) -> Result<(), Box<dyn Error>> {
 
     let mut file = OpenOptions::new().write(true).append(true).open(filename)?;
     let mut writer = Writer::from_writer(file);
@@ -58,6 +60,7 @@ fn write_latency_to_csv(filename: &str, latency_values: [String; 12]) -> Result<
         &latency_values[9],
         &latency_values[10],
         &latency_values[11],
+        &latency_values[12],
     ])?;
 
     Ok(())
@@ -173,11 +176,18 @@ impl StatisticsManager {
         }
     }
 
-    pub fn report_video_packet(&mut self, bytes_count: usize) {
+    pub fn report_video_packet(&mut self, bytes_count: usize,target_timestamp: Duration) {
         self.video_packets_total += 1;
         self.video_packets_partial_sum += 1;
         self.video_bytes_total += bytes_count;
         self.video_bytes_partial_sum += bytes_count;
+        if let Some(frame) = self
+            .history_buffer
+            .iter_mut()
+            .find(|frame| frame.target_timestamp == target_timestamp)
+        {
+            frame.total_size_for_this_frame=bytes_count;
+        }
     }
 
     pub fn report_packet_loss(&mut self) {
@@ -326,8 +336,8 @@ impl StatisticsManager {
            
                 
                 
-            
-            let latency_strings=[interval_trackingReceived_framePresentInVirtualDevice,interval_framePresentInVirtualDevice_frameComposited,interval_frameComposited_VideoEncoded,interval_VideoReceivedByClient_VideoDecoded,interval_network,interval_total_pipeline,target_bitrate,plr,bitrate_statistics,total_packets_send,average_packet_size,shard_loss_rate];
+            let mut packet_size=frame.total_size_for_this_frame.to_string();
+            let latency_strings=[interval_trackingReceived_framePresentInVirtualDevice,interval_framePresentInVirtualDevice_frameComposited,interval_frameComposited_VideoEncoded,interval_VideoReceivedByClient_VideoDecoded,interval_network,interval_total_pipeline,target_bitrate,plr,bitrate_statistics,total_packets_send,average_packet_size,shard_loss_rate,packet_size];
             write_latency_to_csv("C:\\AT\\ALVR\\build\\alvr_streamer_windows\\statistics.csv", latency_strings);
 
             //let mut params=BITRATE_MANAGER.lock().get_encoder_params(config);

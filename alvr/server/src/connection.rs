@@ -534,18 +534,19 @@ fn create_csv_file(filename: &str) -> Result<(), Box<dyn Error>> {
 
     // Write the column names in the first row
     writer.write_record(&[
-        "game latency",
-        "composite latency",
-        "encode latency",
-        "decode latency",
-        "network latency",
-        "total pipeline latency",
-        "target bitrate",
-        "plr",
+        "game latency(ms)",
+        "composite latency(ms)",
+        "encode latency(ms)",
+        "decode latency(ms)",
+        "network latency(ms)",
+        "total pipeline latency(ms)",
+        "target bitrate(mbps)",
+        "plr(%)",
         "bitrate(bps)",
-        "total packets send",
-        "average packt size",
-        "shard loss rate in one frame",
+        "total packets send(Bytes)",
+        "average packt size(Bytes)",
+        "shard loss rate in one frame(%)",
+        "packet size(Bytes)",
     ])?;
 
     Ok(())

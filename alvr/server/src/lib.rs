@@ -398,7 +398,7 @@ pub unsafe extern "C" fn HmdDriverFactory(
             }
 
             if let Some(stats) = &mut *STATISTICS_MANAGER.lock() {
-                stats.report_video_packet(len as _);
+                stats.report_video_packet(len as _,timestamp);
             }
             BITRATE_MANAGER
                 .lock()
