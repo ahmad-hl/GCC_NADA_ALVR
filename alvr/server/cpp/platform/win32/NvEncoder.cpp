@@ -518,20 +518,19 @@ void NvEncoder::EncodeFrame(std::vector<std::vector<uint8_t>> &vPacket, NV_ENC_P
     //     save_frame=true;
     //     count -= count%get_save_frame_feq();
     // }
-    if(count%(get_save_frame_feq()*2)==1000){
+    if(count%(get_save_frame_feq()*2)==get_save_frame_feq()){
         (*pPicParams).encodePicFlags = NV_ENC_PIC_FLAG_FORCEIDR;
         open = true;
         save_frame = true;
     }
-    if(count%(get_save_frame_feq()*2)==1996){
+    if(count%(get_save_frame_feq()*2)==(get_save_frame_feq()*2-4)){
         (*pPicParams).encodePicFlags = NV_ENC_PIC_FLAG_FORCEIDR;
         open = true;
     }
-    if(count%(get_save_frame_feq()*2)>=1996){
+    if(count%(get_save_frame_feq()*2)>=(get_save_frame_feq()*2-4)||count%(get_save_frame_feq()*2)==0){
         save_frame=true;
-        count += 2000-count%(get_save_frame_feq()*2);
+        count += get_save_frame_feq()*2-count%(get_save_frame_feq()*2);
     }
-
 
     NVENCSTATUS nvStatus = DoEncode(m_vMappedInputBuffers[bfrIdx], m_vBitstreamOutputBuffer[bfrIdx], pPicParams);
     // if(save_frame){
