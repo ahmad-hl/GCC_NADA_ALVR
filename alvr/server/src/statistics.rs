@@ -10,7 +10,7 @@ use std::error::Error;
 use std::fs::OpenOptions;
 use std::io::prelude::*;
 use csv::Writer;
-
+use chrono::{Utc, TimeZone, Local, format::{strftime, StrftimeItems}};
 
 use crate::BITRATE_MANAGER;
 const FULL_REPORT_INTERVAL: Duration = Duration::from_millis(500);
@@ -41,7 +41,7 @@ impl Default for HistoryFrame {
 }
 
 
-fn write_latency_to_csv(filename: &str, latency_values: [String; 16]) -> Result<(), Box<dyn Error>> {
+fn write_latency_to_csv(filename: &str, latency_values: [String; 17]) -> Result<(), Box<dyn Error>> {
 
     let mut file = OpenOptions::new().write(true).append(true).open(filename)?;
     let mut writer = Writer::from_writer(file);
@@ -65,6 +65,8 @@ fn write_latency_to_csv(filename: &str, latency_values: [String; 16]) -> Result<
         &latency_values[13],
         &latency_values[14],
         &latency_values[15],
+        &latency_values[16],
+
 
     ])?;
 
@@ -343,8 +345,8 @@ impl StatisticsManager {
             let mut decoder_queue_latency=(client_stats.video_decoder_queue.as_secs_f32()*1000.).to_string();
             let mut client_rendering_latency=(client_stats.rendering.as_secs_f32()*1000.).to_string();
             let mut vsync_queue_latency=(client_stats.vsync_queue.as_secs_f32()*1000.).to_string();
-            
-            let latency_strings=[interval_trackingReceived_framePresentInVirtualDevice,interval_framePresentInVirtualDevice_frameComposited,interval_frameComposited_VideoEncoded,interval_VideoReceivedByClient_VideoDecoded,interval_network,decoder_queue_latency,client_rendering_latency,vsync_queue_latency,interval_total_pipeline,target_bitrate,plr,bitrate_statistics,total_packets_send,average_packet_size,shard_loss_rate,packet_size];
+            let experiment_target_timestamp=Local::now().format("%Y%m%d_%H%M%S").to_string();
+            let latency_strings=[interval_trackingReceived_framePresentInVirtualDevice,interval_framePresentInVirtualDevice_frameComposited,interval_frameComposited_VideoEncoded,interval_VideoReceivedByClient_VideoDecoded,interval_network,decoder_queue_latency,client_rendering_latency,vsync_queue_latency,interval_total_pipeline,target_bitrate,plr,bitrate_statistics,total_packets_send,average_packet_size,shard_loss_rate,packet_size,experiment_target_timestamp];
             write_latency_to_csv("C:\\AT\\ALVR\\build\\alvr_streamer_windows\\statistics.csv", latency_strings);
 
             //let mut params=BITRATE_MANAGER.lock().get_encoder_params(config);
