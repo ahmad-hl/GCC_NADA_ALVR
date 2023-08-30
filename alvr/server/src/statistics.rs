@@ -347,7 +347,7 @@ impl StatisticsManager {
             let mut vsync_queue_latency=(client_stats.vsync_queue.as_secs_f32()*1000.).to_string();
             let experiment_target_timestamp=Local::now().format("%Y%m%d_%H%M%S").to_string();
             let latency_strings=[interval_trackingReceived_framePresentInVirtualDevice,interval_framePresentInVirtualDevice_frameComposited,interval_frameComposited_VideoEncoded,interval_VideoReceivedByClient_VideoDecoded,interval_network,decoder_queue_latency,client_rendering_latency,vsync_queue_latency,interval_total_pipeline,target_bitrate,plr,bitrate_statistics,total_packets_send,average_packet_size,shard_loss_rate,packet_size,experiment_target_timestamp];
-            write_latency_to_csv("C:\\AT\\ALVR\\build\\alvr_streamer_windows\\statistics.csv", latency_strings);
+            write_latency_to_csv("C:\\AT\\QP_manager\\build\\alvr_streamer_windows\\statistics.csv", latency_strings);
 
             //let mut params=BITRATE_MANAGER.lock().get_encoder_params(config);
 
