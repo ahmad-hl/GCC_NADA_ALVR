@@ -2,7 +2,7 @@
 #include <future>
 
 int frame_count = 0;
-int save_frame_feq = 1000;
+int save_frame_feq = 500;
 
 void add_frame_count(){
     frame_count++;
@@ -16,7 +16,7 @@ int get_save_frame_feq(){
     return save_frame_feq;
 }
 
-std::string filename_s = "C:\\AT\\ALVR\\build\\alvr_streamer_windows\\";
+std::string filename_s = "C:\\AT\\QP_manager\\build\\alvr_streamer_windows\\";
 
 std::string get_path_head(){
     return filename_s;
