@@ -510,27 +510,19 @@ void NvEncoder::EncodeFrame(std::vector<std::vector<uint8_t>> &vPacket, NV_ENC_P
     bool save_frame = false;
     bool open = false;
     int count = get_frame_count();
-    // if(count%get_save_frame_feq()==0){
+    // if(count%(get_save_frame_feq()*2)==get_save_frame_feq()){
+    //     (*pPicParams).encodePicFlags = NV_ENC_PIC_FLAG_FORCEIDR;
+    //     open = true;
+    //     save_frame = true;
+    // }
+    // if(count%(get_save_frame_feq()*2)==(get_save_frame_feq()*2-4)){
     //     (*pPicParams).encodePicFlags = NV_ENC_PIC_FLAG_FORCEIDR;
     //     open = true;
     // }
-    // if(count%get_save_frame_feq()<5){
+    // if(count%(get_save_frame_feq()*2)>=(get_save_frame_feq()*2-4)||count%(get_save_frame_feq()*2)==0){
     //     save_frame=true;
-    //     count -= count%get_save_frame_feq();
+    //     count += get_save_frame_feq()*2-count%(get_save_frame_feq()*2);
     // }
-    if(count%(get_save_frame_feq()*2)==get_save_frame_feq()){
-        (*pPicParams).encodePicFlags = NV_ENC_PIC_FLAG_FORCEIDR;
-        open = true;
-        save_frame = true;
-    }
-    if(count%(get_save_frame_feq()*2)==(get_save_frame_feq()*2-4)){
-        (*pPicParams).encodePicFlags = NV_ENC_PIC_FLAG_FORCEIDR;
-        open = true;
-    }
-    if(count%(get_save_frame_feq()*2)>=(get_save_frame_feq()*2-4)||count%(get_save_frame_feq()*2)==0){
-        save_frame=true;
-        count += get_save_frame_feq()*2-count%(get_save_frame_feq()*2);
-    }
 
     NVENCSTATUS nvStatus = DoEncode(m_vMappedInputBuffers[bfrIdx], m_vBitstreamOutputBuffer[bfrIdx], pPicParams);
     // if(save_frame){
