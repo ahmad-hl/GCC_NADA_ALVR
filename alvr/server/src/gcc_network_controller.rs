@@ -48,7 +48,10 @@ impl GccBandwidthEstimator{
 
         self.bitrate_estimator_manager.Update(arrival_time_ms, packet_size as usize, false);
 
-        self.rate_control_input_manager.estimated_throughput = Some(self.bitrate_estimator_manager.bitrate().unwrap());
+        if self.bitrate_estimator_manager.bitrate().is_some(){
+            self.rate_control_input_manager.estimated_throughput = Some(self.bitrate_estimator_manager.bitrate().unwrap());
+        }
+        
 
         let at_time = (Utc::now().timestamp_micros() as f64 * 0.001) as i64;
 
