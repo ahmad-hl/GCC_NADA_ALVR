@@ -29,6 +29,7 @@ use alvr_sockets::{
     ControlSocketSender, PeerType, ProtoControlSocket, StreamSender, StreamSocketBuilder,
     KEEPALIVE_INTERVAL, KEEPALIVE_TIMEOUT,
 };
+use chrono::Utc;
 use serde_json as json;
 use std::{
     collections::HashMap,
@@ -298,9 +299,9 @@ fn connection_pipeline(
             let Ok((header, nal)) = data.get() else {
                 return;
             };
-
+            let arrival_timestamp = Utc::now().timestamp_micros();
             if let Some(stats) = &mut *STATISTICS_MANAGER.lock() {
-                stats.report_video_packet_received(header.timestamp);
+                stats.report_video_packet_received(header.timestamp, arrival_timestamp);
             }
 
             if header.is_idr {

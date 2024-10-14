@@ -8,7 +8,7 @@ use std::{
     collections::VecDeque,
     time::{Duration, Instant},
 };
-
+use crate::GCC_BANDWIDTH_ESTIMATOR;
 const UPDATE_INTERVAL: Duration = Duration::from_secs(1);
 
 pub struct BitrateManager {
@@ -163,107 +163,107 @@ impl BitrateManager {
         &mut self,
         config: &BitrateConfig,
     ) -> (FfiDynamicEncoderParams, Option<NominalBitrateStats>) {
-        let now = Instant::now();
+        // let now = Instant::now();
 
-        if self
-            .previous_config
-            .as_ref()
-            .map(|prev| config != prev)
-            .unwrap_or(true)
-        {
-            self.previous_config = Some(config.clone());
-            // Continue method. Always update bitrate in this case
-        } else if !self.update_needed
-            && (now < self.last_update_instant + UPDATE_INTERVAL
-                || matches!(config.mode, BitrateMode::ConstantMbps(_)))
-        {
-            return (
-                FfiDynamicEncoderParams {
-                    updated: 0,
-                    bitrate_bps: 0,
-                    framerate: 0.0,
-                },
-                None,
-            );
-        }
+        // if self
+        //     .previous_config
+        //     .as_ref()
+        //     .map(|prev| config != prev)
+        //     .unwrap_or(true)
+        // {
+        //     self.previous_config = Some(config.clone());
+        //     // Continue method. Always update bitrate in this case
+        // } else if !self.update_needed
+        //     && (now < self.last_update_instant + UPDATE_INTERVAL
+        //         || matches!(config.mode, BitrateMode::ConstantMbps(_)))
+        // {
+        //     return (
+        //         FfiDynamicEncoderParams {
+        //             updated: 0,
+        //             bitrate_bps: 0,
+        //             framerate: 0.0,
+        //         },
+        //         None,
+        //     );
+        // }
 
-        self.last_update_instant = now;
-        self.update_needed = false;
+        // self.last_update_instant = now;
+        // self.update_needed = false;
 
-        let mut stats = NominalBitrateStats::default();
+        // let mut stats = NominalBitrateStats::default();
 
-        let bitrate_bps = match &config.mode {
-            BitrateMode::ConstantMbps(bitrate_mbps) => *bitrate_mbps as f32 * 1e6,
-            BitrateMode::Adaptive {
-                saturation_multiplier,
-                max_bitrate_mbps,
-                min_bitrate_mbps,
-                max_network_latency_ms,
-                encoder_latency_limiter,
-                ..
-            } => {
-                let initial_bitrate_average_bps = self.bitrate_average.get_average();
+        // let bitrate_bps = match &config.mode {
+        //     BitrateMode::ConstantMbps(bitrate_mbps) => *bitrate_mbps as f32 * 1e6,
+        //     BitrateMode::Adaptive {
+        //         saturation_multiplier,
+        //         max_bitrate_mbps,
+        //         min_bitrate_mbps,
+        //         max_network_latency_ms,
+        //         encoder_latency_limiter,
+        //         ..
+        //     } => {
+        //         let initial_bitrate_average_bps = self.bitrate_average.get_average();
 
-                let mut bitrate_bps = initial_bitrate_average_bps * saturation_multiplier;
-                stats.scaled_calculated_bps = Some(bitrate_bps);
+        //         let mut bitrate_bps = initial_bitrate_average_bps * saturation_multiplier;
+        //         stats.scaled_calculated_bps = Some(bitrate_bps);
 
-                bitrate_bps = f32::min(bitrate_bps, self.dynamic_max_bitrate);
-                stats.decoder_latency_limiter_bps = Some(self.dynamic_max_bitrate);
+        //         bitrate_bps = f32::min(bitrate_bps, self.dynamic_max_bitrate);
+        //         stats.decoder_latency_limiter_bps = Some(self.dynamic_max_bitrate);
 
-                if let Switch::Enabled(max_ms) = max_network_latency_ms {
-                    let max = initial_bitrate_average_bps * (*max_ms as f32 / 1000.0)
-                        / self.network_latency_average.get_average().as_secs_f32();
-                    bitrate_bps = f32::min(bitrate_bps, max);
+        //         if let Switch::Enabled(max_ms) = max_network_latency_ms {
+        //             let max = initial_bitrate_average_bps * (*max_ms as f32 / 1000.0)
+        //                 / self.network_latency_average.get_average().as_secs_f32();
+        //             bitrate_bps = f32::min(bitrate_bps, max);
 
-                    stats.network_latency_limiter_bps = Some(max);
-                }
+        //             stats.network_latency_limiter_bps = Some(max);
+        //         }
 
-                if let Switch::Enabled(config) = encoder_latency_limiter {
-                    let saturation = self.encoder_latency_average.get_average().as_secs_f32()
-                        / self.nominal_frame_interval.as_secs_f32();
-                    let max =
-                        initial_bitrate_average_bps * config.max_saturation_multiplier / saturation;
-                    stats.encoder_latency_limiter_bps = Some(max);
+        //         if let Switch::Enabled(config) = encoder_latency_limiter {
+        //             let saturation = self.encoder_latency_average.get_average().as_secs_f32()
+        //                 / self.nominal_frame_interval.as_secs_f32();
+        //             let max =
+        //                 initial_bitrate_average_bps * config.max_saturation_multiplier / saturation;
+        //             stats.encoder_latency_limiter_bps = Some(max);
 
-                    if saturation > config.max_saturation_multiplier {
-                        // Note: this assumes linear relationship between bitrate and encoder
-                        // latency but this may not be the case
-                        bitrate_bps = f32::min(bitrate_bps, max);
-                    }
-                }
+        //             if saturation > config.max_saturation_multiplier {
+        //                 // Note: this assumes linear relationship between bitrate and encoder
+        //                 // latency but this may not be the case
+        //                 bitrate_bps = f32::min(bitrate_bps, max);
+        //             }
+        //         }
 
-                if let Switch::Enabled(max) = max_bitrate_mbps {
-                    let max = *max as f32 * 1e6;
-                    bitrate_bps = f32::min(bitrate_bps, max);
+        //         if let Switch::Enabled(max) = max_bitrate_mbps {
+        //             let max = *max as f32 * 1e6;
+        //             bitrate_bps = f32::min(bitrate_bps, max);
 
-                    stats.manual_max_bps = Some(max);
-                }
-                if let Switch::Enabled(min) = min_bitrate_mbps {
-                    let min = *min as f32 * 1e6;
-                    bitrate_bps = f32::max(bitrate_bps, min);
+        //             stats.manual_max_bps = Some(max);
+        //         }
+        //         if let Switch::Enabled(min) = min_bitrate_mbps {
+        //             let min = *min as f32 * 1e6;
+        //             bitrate_bps = f32::max(bitrate_bps, min);
 
-                    stats.manual_min_bps = Some(min);
-                }
+        //             stats.manual_min_bps = Some(min);
+        //         }
 
-                bitrate_bps
-            }
-        };
+        //         bitrate_bps
+        //     }
+        // };
 
-        stats.requested_bps = bitrate_bps;
+        // stats.requested_bps = bitrate_bps;
 
-        let frame_interval = if config.adapt_to_framerate.enabled() {
-            self.frame_interval_average.get_average()
-        } else {
-            self.nominal_frame_interval
-        };
-
+        // let frame_interval = if config.adapt_to_framerate.enabled() {
+        //     self.frame_interval_average.get_average()
+        // } else {
+        //     self.nominal_frame_interval
+        // };
+        let bitrate_bps = GCC_BANDWIDTH_ESTIMATOR.lock().get_target_bitrate_bps();
         (
             FfiDynamicEncoderParams {
                 updated: 1,
                 bitrate_bps: bitrate_bps as u64,
-                framerate: 1.0 / frame_interval.as_secs_f32().min(1.0),
+                framerate: 72.,
             },
-            Some(stats),
+            None,
         )
     }
 }

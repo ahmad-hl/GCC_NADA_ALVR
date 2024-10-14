@@ -10,7 +10,7 @@ use std::fs::OpenOptions;
 use std::error::Error;
 const FULL_REPORT_INTERVAL: Duration = Duration::from_millis(500);
 use chrono::{Utc, TimeZone, Local, format::{strftime, StrftimeItems}};
-
+use crate::GCC_BANDWIDTH_ESTIMATOR;
 pub struct HistoryFrame {
     target_timestamp: Duration,
     tracking_received: Instant,
@@ -49,7 +49,7 @@ struct BatteryData {
     gauge_value: f32,
     is_plugged: bool,
 }
-fn write_latency_to_csv(filename: &str, latency_values: [String; 16]) -> Result<(), Box<dyn Error>> {
+fn write_latency_to_csv(filename: &str, latency_values: [String; 17]) -> Result<(), Box<dyn Error>> {
 
     let mut file = OpenOptions::new().write(true).append(true).open(filename)?;
     let mut writer = Writer::from_writer(file);
@@ -73,7 +73,7 @@ fn write_latency_to_csv(filename: &str, latency_values: [String; 16]) -> Result<
         &latency_values[13],
         &latency_values[14],
         &latency_values[15],
-        // &latency_values[16],
+        &latency_values[16],
         // &latency_values[17],
         // &latency_values[18],
         // &latency_values[19],
@@ -239,14 +239,14 @@ impl StatisticsManager {
             Duration::ZERO
         }
     }
-    pub fn report_send_timestamp(&mut self,target_timestamp: Duration)
+    pub fn report_send_timestamp(&mut self,target_timestamp: Duration, send_ts: i64)
     {
         if let Some(frame) = self
             .history_buffer
             .iter_mut()
             .find(|frame| frame.target_timestamp == target_timestamp)
         {
-            frame.frame_send_timestamp = Utc::now().timestamp_micros();
+            frame.frame_send_timestamp = send_ts;
         }
 
     }
@@ -390,26 +390,29 @@ impl StatisticsManager {
                 nominal_bitrate: self.last_nominal_bitrate_stats.clone(),
                 actual_bitrate_bps: bitrate_bps,
             }));
-            let mut timestamp_for_this_frame=(frame.target_timestamp.as_nanos()).to_string();
-            let mut interval_trackingReceived_framePresentInVirtualDevice=(game_time_latency.as_secs_f32()*1000.).to_string();//game latency
-            let mut interval_framePresentInVirtualDevice_frameComposited=(server_compositor_latency.as_secs_f32()*1000.).to_string();//composite latency
-            let mut interval_frameComposited_VideoEncoded=(encoder_latency.as_secs_f32() * 1000.).to_string();//encode latency
-            let mut interval_VideoReceivedByClient_VideoDecoded=(client_stats.video_decode.as_secs_f32() * 1000.).to_string();//decode latency
-            let mut interval_network=((network_latency.as_secs_f32()*1000.).to_string());//network latency(interval_trackingsend_trackingreceived+interval_encodedVideoSend_encodedVideoReceived)
-            let mut client_dequeue_latency=(client_stats.video_decoder_queue.as_secs_f32()*1000.).to_string();
-            let mut client_rendering_latency=(client_stats.rendering.as_secs_f32()*1000.).to_string();
-            let mut client_vsync_queue_latency=(client_stats.vsync_queue.as_secs_f32()*1000.).to_string();
-            let mut interval_total_pipeline=(frame.total_pipeline_latency.as_secs_f32() * 1000.).to_string();//total pipeline latency wz repeat
-            let mut bitrate_statistics=bitrate_bps.to_string();//bitrate bps
-            let mut total_size_for_this_encoded_frame_bytes=frame.video_packet_bytes.to_string();//bytes for this frame
-            let mut frame_send_ts=frame.frame_send_timestamp.to_string();
-            let mut frame_arrival_ts=client_stats.frame_arrival_timestamp.to_string();
-            let mut server_fps=server_fps.to_string();
-            let mut client_fps=client_fps.to_string();
+
+            let gcc_target_bitrate_bps = GCC_BANDWIDTH_ESTIMATOR.lock().Update(frame.frame_send_timestamp as f64, client_stats.frame_arrival_timestamp as f64, frame.video_packet_bytes as i64);
+            let timestamp_for_this_frame=(frame.target_timestamp.as_nanos()).to_string();
+            let interval_trackingReceived_framePresentInVirtualDevice=(game_time_latency.as_secs_f32()*1000.).to_string();//game latency
+            let interval_framePresentInVirtualDevice_frameComposited=(server_compositor_latency.as_secs_f32()*1000.).to_string();//composite latency
+            let interval_frameComposited_VideoEncoded=(encoder_latency.as_secs_f32() * 1000.).to_string();//encode latency
+            let interval_VideoReceivedByClient_VideoDecoded=(client_stats.video_decode.as_secs_f32() * 1000.).to_string();//decode latency
+            let interval_network=((network_latency.as_secs_f32()*1000.).to_string());//network latency(interval_trackingsend_trackingreceived+interval_encodedVideoSend_encodedVideoReceived)
+            let client_dequeue_latency=(client_stats.video_decoder_queue.as_secs_f32()*1000.).to_string();
+            let client_rendering_latency=(client_stats.rendering.as_secs_f32()*1000.).to_string();
+            let client_vsync_queue_latency=(client_stats.vsync_queue.as_secs_f32()*1000.).to_string();
+            let interval_total_pipeline=(frame.total_pipeline_latency.as_secs_f32() * 1000.).to_string();//total pipeline latency wz repeat
+            let bitrate_statistics=bitrate_bps.to_string();//bitrate bps
+            let total_size_for_this_encoded_frame_bytes=frame.video_packet_bytes.to_string();//bytes for this frame
+            let frame_send_ts=frame.frame_send_timestamp.to_string();
+            let frame_arrival_ts=client_stats.frame_arrival_timestamp.to_string();
+            let server_fps=server_fps.to_string();
+            let client_fps=client_fps.to_string();
+            let gcc_target_bitrate_bps_string = gcc_target_bitrate_bps.to_string();
             //let mut tracking_received_time=frame.tracking_received.saturating_duration_since(Instant::)
             let latency_strings=[timestamp_for_this_frame,interval_trackingReceived_framePresentInVirtualDevice,interval_framePresentInVirtualDevice_frameComposited,interval_frameComposited_VideoEncoded,interval_VideoReceivedByClient_VideoDecoded,interval_network,
             client_dequeue_latency,client_rendering_latency,client_vsync_queue_latency,interval_total_pipeline,bitrate_statistics,total_size_for_this_encoded_frame_bytes,frame_send_ts,
-            frame_arrival_ts,server_fps,client_fps];
+            frame_arrival_ts,server_fps,client_fps,gcc_target_bitrate_bps_string];
             write_latency_to_csv("statistics.csv", latency_strings);
             network_latency
         } else {

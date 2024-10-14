@@ -1,14 +1,5 @@
 use crate::{
-    bitrate::BitrateManager,
-    face_tracking::FaceTrackingSink,
-    hand_gestures::{trigger_hand_gesture_actions, HandGestureManager, HAND_GESTURE_BUTTON_SET},
-    haptics,
-    input_mapping::ButtonMappingManager,
-    sockets::WelcomeSocket,
-    statistics::StatisticsManager,
-    tracking::{self, TrackingManager},
-    FfiFov, FfiViewsConfig, VideoPacket, BITRATE_MANAGER, DECODER_CONFIG, LIFECYCLE_STATE,
-    SERVER_DATA_MANAGER, STATISTICS_MANAGER, VIDEO_MIRROR_SENDER, VIDEO_RECORDING_FILE,EYE_GAZE_DATA,
+    bitrate::BitrateManager, face_tracking::FaceTrackingSink, gcc_network_controller::GccBandwidthEstimator, hand_gestures::{trigger_hand_gesture_actions, HandGestureManager, HAND_GESTURE_BUTTON_SET}, haptics, input_mapping::ButtonMappingManager, sockets::WelcomeSocket, statistics::StatisticsManager, tracking::{self, TrackingManager}, FfiFov, FfiViewsConfig, VideoPacket, BITRATE_MANAGER, DECODER_CONFIG, EYE_GAZE_DATA, GCC_BANDWIDTH_ESTIMATOR, LIFECYCLE_STATE, SERVER_DATA_MANAGER, STATISTICS_MANAGER, VIDEO_MIRROR_SENDER, VIDEO_RECORDING_FILE
 };
 use alvr_audio::AudioDevice;
 use alvr_common::{
@@ -34,6 +25,7 @@ use alvr_sockets::{
     PeerType, ProtoControlSocket, StreamSender, StreamSocketBuilder, KEEPALIVE_INTERVAL,
     KEEPALIVE_TIMEOUT,
 };
+use chrono::Utc;
 use std::error::Error;
 use std::fs::OpenOptions;
 use std::io::prelude::*;
@@ -629,6 +621,7 @@ fn connection_pipeline(
 
     *BITRATE_MANAGER.lock() = BitrateManager::new(settings.video.bitrate.history_size, fps);
 
+    *GCC_BANDWIDTH_ESTIMATOR.lock() = GccBandwidthEstimator::new();
     let mut stream_socket = StreamSocketBuilder::connect_to_client(
         HANDSHAKE_ACTION_TIMEOUT,
         client_ip,
@@ -669,9 +662,11 @@ fn connection_pipeline(
                 buffer
                     .get_range_mut(0, payload.len())
                     .copy_from_slice(&payload);
+
+                let send_timestamp = Utc::now().timestamp_micros();
                 video_sender.send(buffer).ok();//tcp or udp real send out
                 if let Some(stats) = &mut *STATISTICS_MANAGER.lock() {
-                    stats.report_send_timestamp(header.timestamp);
+                    stats.report_send_timestamp(header.timestamp,send_timestamp);
                 }
             }
         }
