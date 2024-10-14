@@ -402,7 +402,7 @@ impl StatisticsManager {
             let client_rendering_latency=(client_stats.rendering.as_secs_f32()*1000.).to_string();
             let client_vsync_queue_latency=(client_stats.vsync_queue.as_secs_f32()*1000.).to_string();
             let interval_total_pipeline=(frame.total_pipeline_latency.as_secs_f32() * 1000.).to_string();//total pipeline latency wz repeat
-            let bitrate_statistics=bitrate_bps.to_string();//bitrate bps
+            let bitrate_statistics=GCC_BANDWIDTH_ESTIMATOR.lock().get_estimated_througput().to_string();//bitrate_bps.to_string();//bitrate bps
             let total_size_for_this_encoded_frame_bytes=frame.video_packet_bytes.to_string();//bytes for this frame
             let frame_send_ts=frame.frame_send_timestamp.to_string();
             let frame_arrival_ts=client_stats.frame_arrival_timestamp.to_string();

@@ -65,4 +65,12 @@ impl GccBandwidthEstimator{
     pub fn get_target_bitrate_bps(&mut self)->f64{
         return self.aimd_manager.current_bitrate_;
     }
+
+    pub fn get_estimated_througput(&mut self)->f64{
+        if self.bitrate_estimator_manager.bitrate().is_some(){
+            return self.bitrate_estimator_manager.bitrate().unwrap();
+        }else{
+            return 0.0;
+        }
+    }
 }
