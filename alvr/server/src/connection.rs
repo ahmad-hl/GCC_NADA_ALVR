@@ -89,12 +89,15 @@ fn create_csv_file_for_statistics(filename: &str) -> Result<(), Box<dyn Error>> 
             "rendering(ms)",
             "vsync_queue_latency(ms)",
             "total latency(ms)",
-            "target bitrate(mps)",
+            "",
             "total size for this frame(encoded)(bytes)",
             "send_ts(ms)",
             "arrival_ts(ms)",
             "server_fps(frame per second)",
             "client_fps(frame per second)",
+            "target_bitrate_bps",
+            "bitrate_mbps",
+            "experiment_target_timestamp",
         ])?;
     } else {
         println!("File '{}' already exists, skipping creation.", filename);
