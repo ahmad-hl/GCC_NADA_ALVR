@@ -85,6 +85,7 @@ fn create_csv_file_for_statistics(filename: &str) -> Result<(), Box<dyn Error>> 
             "encode latency(ms)",
             "decode latency(ms)",
             "network latency(ms)",
+            "decode_latency(ms)",
             "decoder_queue_latency(ms)",
             "rendering(ms)",
             "vsync_queue_latency(ms)",

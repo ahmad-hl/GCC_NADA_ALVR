@@ -76,7 +76,7 @@ fn write_latency_to_csv(filename: &str, latency_values: [String; 19]) -> Result<
         &latency_values[16],
         &latency_values[17],
         &latency_values[18],
-        // &latency_values[19],
+        //&latency_values[19],
         // &latency_values[20],
         // &latency_values[21],
         // &latency_values[22],
@@ -400,6 +400,7 @@ impl StatisticsManager {
             let interval_frameComposited_VideoEncoded=(encoder_latency.as_secs_f32() * 1000.).to_string();//encode latency
             let interval_VideoReceivedByClient_VideoDecoded=(client_stats.video_decode.as_secs_f32() * 1000.).to_string();//decode latency
             let interval_network=((network_latency.as_secs_f32()*1000.).to_string());//network latency(interval_trackingsend_trackingreceived+interval_encodedVideoSend_encodedVideoReceived)
+            //let decode_latency = (client_stats.video_decode.as_secs_f32()*1000.).to_string();
             let client_dequeue_latency=(client_stats.video_decoder_queue.as_secs_f32()*1000.).to_string();
             let client_rendering_latency=(client_stats.rendering.as_secs_f32()*1000.).to_string();
             let client_vsync_queue_latency=(client_stats.vsync_queue.as_secs_f32()*1000.).to_string();

@@ -1329,7 +1329,7 @@ pub fn session_settings_default() -> SettingsDefault {
             tracking_ref_only: false,
             enable_vive_tracker_proxy: false,
             face_tracking: SwitchDefault {
-                enabled: false,
+                enabled: true,
                 content: FaceTrackingConfigDefault {
                     gui_collapsed: true,
                     sources: FaceTrackingSourcesConfigDefault {
