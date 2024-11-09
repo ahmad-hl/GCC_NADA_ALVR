@@ -49,7 +49,7 @@ std::optional<PoseHistory::TrackingHistoryFrame> PoseHistory::GetBestPoseMatch(c
 {
 	std::unique_lock<std::mutex> lock(m_mutex);
 	// return m_poseBuffer.back();
-	if (m_transformUpdating && !m_poseBuffer.empty()) {
+	if (!m_poseBuffer.empty()) {//m_transformUpdating && 
 		return m_poseBuffer.back();
 	}
 	float minDiff = 100000;

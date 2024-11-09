@@ -15,13 +15,23 @@ pub struct HistoryFrame {
     target_timestamp: Duration,
     tracking_received: Instant,
     frame_present: Instant,
+    frame_present_MTP: Instant,
     frame_composed: Instant,
+    frame_composed_MTP: Instant,
     frame_encoded: Instant,
+    frame_encoded_MTP: Instant,
     video_packet_bytes: usize,
+    video_packet_bytes_MTP: usize,
     total_pipeline_latency: Duration,
+    total_pipeline_latency_MTP: Duration,
     reported:bool,//wz repeat
     last_repeat_game_latency:Duration,//wz repeat
     frame_send_timestamp:i64,
+    encode_times: i32,
+    composition_times: i32,
+    tracking_rece_times: i32,
+    frame_present_times: i32,
+    MTP_reported: bool
     
 }
 
@@ -32,13 +42,23 @@ impl Default for HistoryFrame {
             target_timestamp: Duration::ZERO,
             tracking_received: now,
             frame_present: now,
+            frame_present_MTP: now,
             frame_composed: now,
+            frame_composed_MTP: now,
             frame_encoded: now,
+            frame_encoded_MTP: now,
             video_packet_bytes: 0,//total size for this encoded frame
+            video_packet_bytes_MTP: 0,
             total_pipeline_latency: Duration::ZERO,
+            total_pipeline_latency_MTP: Duration::ZERO,
             reported: false,//wz repeat
             last_repeat_game_latency: Duration::ZERO,//wz repeat
             frame_send_timestamp:Utc::now().timestamp_micros(),
+            encode_times: 0,
+            composition_times: 0,
+            tracking_rece_times: 0,
+            frame_present_times: 0,
+            MTP_reported: false,
             
         }
     }
@@ -48,6 +68,46 @@ impl Default for HistoryFrame {
 struct BatteryData {
     gauge_value: f32,
     is_plugged: bool,
+}
+fn write_MTP_latency_to_csv(filename: &str, latency_values: [String; 14]) -> Result<(), Box<dyn Error>> {
+    let mut file = OpenOptions::new().write(true).append(true).open(filename)?;
+    let mut writer = Writer::from_writer(file);
+    // Write the latency strings in the next row
+    writer.write_record(&[
+        &latency_values[0],
+        &latency_values[1],
+        &latency_values[2],
+        &latency_values[3],
+        &latency_values[4],
+        &latency_values[5],
+        &latency_values[6],
+        &latency_values[7],
+        &latency_values[8],
+        &latency_values[9],
+        &latency_values[10],
+        &latency_values[11],
+        &latency_values[12],
+        &latency_values[13],
+        //&latency_values[14],
+        // &latency_values[15],
+        // &latency_values[16],
+        // &latency_values[17],
+        // &latency_values[18],
+        // &latency_values[19],
+        // &latency_values[20],
+        // &latency_values[21],
+        // &latency_values[22],
+        // &latency_values[23],
+        // &latency_values[24],
+        // &latency_values[25],
+        // &latency_values[26],
+        // &latency_values[27],
+        // &latency_values[28],
+        // &latency_values[29],
+        // &latency_values[30],
+        // &latency_values[31],
+        ])?;
+        Ok(())
 }
 fn write_latency_to_csv(filename: &str, latency_values: [String; 19]) -> Result<(), Box<dyn Error>> {
 
@@ -192,6 +252,10 @@ impl StatisticsManager {
             .iter_mut()
             .find(|frame| frame.target_timestamp == target_timestamp)
         {
+            if frame.frame_present_times == 0 {
+                let now = Instant::now() - offset;
+                frame.frame_present_MTP = now;
+            }
             let now = Instant::now() - offset;
 
             self.last_frame_present_interval =
@@ -199,6 +263,7 @@ impl StatisticsManager {
             self.last_frame_present_instant = now;
 
             frame.frame_present = now;
+            frame.frame_present_times +=1;
         }
     }
 
@@ -208,7 +273,11 @@ impl StatisticsManager {
             .iter_mut()
             .find(|frame| frame.target_timestamp == target_timestamp)
         {
+            if frame.composition_times == 0{
+                frame.frame_composed_MTP = Instant::now() - offset;
+            }
             frame.frame_composed = Instant::now() - offset;
+            frame.composition_times +=1;
         }
     }
 
@@ -228,10 +297,15 @@ impl StatisticsManager {
             .iter_mut()
             .find(|frame| frame.target_timestamp == target_timestamp)
         {
+            if frame.encode_times == 0{
+                frame.frame_encoded_MTP = Instant::now();
+                frame.video_packet_bytes_MTP = bytes_count;
+                let _ = frame.frame_encoded_MTP.saturating_duration_since(frame.frame_composed_MTP);
+            }
             frame.frame_encoded = Instant::now();
 
             frame.video_packet_bytes = bytes_count;
-
+            frame.encode_times +=1;
             frame
                 .frame_encoded
                 .saturating_duration_since(frame.frame_composed)
@@ -265,10 +339,68 @@ impl StatisticsManager {
     pub fn report_nominal_bitrate_stats(&mut self, stats: NominalBitrateStats) {
         self.last_nominal_bitrate_stats = stats;
     }
-
+    pub fn report_statistics_MTP(&mut self, client_stats: ClientStatistics,bitrate_mbps: String) {
+        if let Some(frame) = self
+            .history_buffer
+            .iter_mut()
+            .find(|frame| frame.target_timestamp == client_stats.target_timestamp){
+                if frame.MTP_reported {
+                    return;
+                }
+                frame.total_pipeline_latency_MTP = client_stats.total_pipeline_latency;
+                let mut game_time_latency = frame
+                    .frame_present_MTP
+                    .saturating_duration_since(frame.tracking_received);
+    
+                let server_compositor_latency = frame
+                    .frame_composed_MTP
+                    .saturating_duration_since(frame.frame_present_MTP);
+    
+                let encoder_latency = frame
+                    .frame_encoded_MTP
+                    .saturating_duration_since(frame.frame_composed_MTP);
+                let network_latency = frame.total_pipeline_latency_MTP.saturating_sub(
+                    game_time_latency
+                        + server_compositor_latency
+                        + encoder_latency
+                        + client_stats.video_decode
+                        + client_stats.video_decoder_queue
+                        + client_stats.rendering
+                        + client_stats.vsync_queue,
+                );
+                let client_fps = 1.0
+                / client_stats
+                    .frame_interval
+                    .max(Duration::from_millis(1))
+                    .as_secs_f32();
+                 let server_fps = 1.0
+                / self
+                    .last_frame_present_interval
+                    .max(Duration::from_millis(1))
+                    .as_secs_f32();
+                let mut bitrate_mbps = bitrate_mbps;
+                let mut timestamp_for_this_frame=(frame.target_timestamp.as_nanos()).to_string();
+                let mut interval_trackingReceived_framePresentInVirtualDevice=(game_time_latency.as_secs_f32()*1000.).to_string();//game latency
+                let mut interval_framePresentInVirtualDevice_frameComposited=(server_compositor_latency.as_secs_f32()*1000.).to_string();//composite latency
+                let mut interval_frameComposited_VideoEncoded=(encoder_latency.as_secs_f32() * 1000.).to_string();//encode latency
+                let mut interval_VideoReceivedByClient_VideoDecoded=(client_stats.video_decode.as_secs_f32() * 1000.).to_string();//decode latency
+                let mut interval_network=((network_latency.as_secs_f32()*1000.).to_string());//network latency(interval_trackingsend_trackingreceived+interval_encodedVideoSend_encodedVideoReceived)
+                let mut client_dequeue_latency=(client_stats.video_decoder_queue.as_secs_f32()*1000.).to_string();
+                let mut client_rendering_latency=(client_stats.rendering.as_secs_f32()*1000.).to_string();
+                let mut client_vsync_queue_latency=(client_stats.vsync_queue.as_secs_f32()*1000.).to_string();
+                let mut interval_total_pipeline=(frame.total_pipeline_latency_MTP.as_secs_f32() * 1000.).to_string();//total pipeline latency wz repeat
+                let encoded_frame_size = frame.video_packet_bytes_MTP.to_string();
+                let experiment_target_timestamp=Local::now().format("%Y%m%d_%H%M%S").to_string();
+                //let controller_string = controller;
+                let latency_strings=[timestamp_for_this_frame,interval_trackingReceived_framePresentInVirtualDevice,interval_framePresentInVirtualDevice_frameComposited,interval_frameComposited_VideoEncoded,interval_VideoReceivedByClient_VideoDecoded,interval_network,
+            client_dequeue_latency,client_rendering_latency,client_vsync_queue_latency,interval_total_pipeline,encoded_frame_size,server_fps.to_string(),bitrate_mbps,experiment_target_timestamp];
+                write_MTP_latency_to_csv("statistics_mtp.csv", latency_strings);
+                frame.MTP_reported = true;
+        }
+    }
     // Called every frame. Some statistics are reported once every frame
     // Returns network latency
-    pub fn report_statistics(&mut self, client_stats: ClientStatistics) -> Duration {
+    pub fn report_statistics(&mut self, client_stats: ClientStatistics) -> (Duration,String) {
         if let Some(frame) = self
             .history_buffer
             .iter_mut()
@@ -358,6 +490,7 @@ impl StatisticsManager {
                 self.video_bytes_partial_sum = 0;
                 self.packets_lost_partial_sum = 0;
             }
+            let return_bitrate_mbps = bitrate_mbps.clone();
             if frame.reported{
                 game_time_latency=game_time_latency.saturating_sub(frame.last_repeat_game_latency);
                 
@@ -418,9 +551,9 @@ impl StatisticsManager {
             client_dequeue_latency,client_rendering_latency,client_vsync_queue_latency,interval_total_pipeline,bitrate_statistics,total_size_for_this_encoded_frame_bytes,frame_send_ts,
             frame_arrival_ts,server_fps,client_fps,gcc_target_bitrate_bps_string,bitrate_mbps,experiment_target_timestamp];
             write_latency_to_csv("statistics.csv", latency_strings);
-            network_latency
+            (network_latency,return_bitrate_mbps)
         } else {
-            Duration::ZERO
+            (Duration::ZERO,"".to_string())
         }
     }
 

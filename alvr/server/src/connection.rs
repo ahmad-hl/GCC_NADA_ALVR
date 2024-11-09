@@ -73,6 +73,54 @@ fn is_streaming(client_hostname: &str) -> bool {
         .map(|c| c.connection_state == ConnectionState::Streaming)
         .unwrap_or(false)
 }
+fn create_csv_file_for_MTP_statistics(filename: &str) -> Result<(), Box<dyn Error>> {
+    if !fs::metadata(filename).is_ok() {
+        let mut writer = WriterBuilder::new().has_headers(false).from_writer(File::create(filename)?);
+        // Write the column names in the first row
+        writer.write_record(&[
+            "target_ts(nanos)",
+            "game latency(ms)",
+            "composite latency(ms)",
+            "encode latency(ms)",
+            "decode latency(ms)",
+            "network latency(ms)",
+            "decoder_queue_latency(ms)",
+            "rendering(ms)",
+            "vsync_queue_latency(ms)",
+            "total latency(ms)",
+            // "target bitrate(mps)",
+            // "total size for this frame(encoded)(bytes)",
+            // "send_ts(ms)",
+            // "arrival_ts(ms)",
+            "enconded frame size(bytes)",
+            "Frame rate(FPS)",
+            // "client_fps(frame per second)",
+            
+            "bitrate_mbps",
+            "experiment_target_timestamp",
+            // "current_state",
+            // "current_action",
+            // "modified_trend",
+            // "threshold",
+            // "send_delta_ts",
+            // "arrival_delta_ts",
+            // "delta_ts",
+            // "client_recv_times",
+            // "had_pkt_loss",
+            // "push_decode_failed",
+           
+            // "tracking_recv_times",
+            // "frame_present_times",
+            // "frame_composition_times",
+            // "frame_encoded_times",
+            // "frame_send_times",
+            // "tracking_recv_ts"
+        ])?;
+    } else {
+        println!("File '{}' already exists, skipping creation.", filename);
+    }
+    Ok(())
+}
 fn create_csv_file_for_statistics(filename: &str) -> Result<(), Box<dyn Error>> {
     if !fs::metadata(filename).is_ok() {
         let mut writer = WriterBuilder::new().has_headers(false).from_writer(File::create(filename)?);
@@ -1024,6 +1072,7 @@ fn connection_pipeline(
     let statistics_thread = thread::spawn({
         let client_hostname = client_hostname.clone();
         create_csv_file_for_statistics("statistics.csv");
+        create_csv_file_for_MTP_statistics("statistics_mtp.csv");
         move || {
             while is_streaming(&client_hostname) {
                 let data = match statics_receiver.recv(STREAMING_RECV_TIMEOUT) {
@@ -1038,7 +1087,9 @@ fn connection_pipeline(
                 if let Some(stats) = &mut *STATISTICS_MANAGER.lock() {
                     let timestamp = client_stats.target_timestamp;
                     let decoder_latency = client_stats.video_decode;
-                    let network_latency = stats.report_statistics(client_stats);
+                    let cls = client_stats.clone();
+                    let (network_latency,bitrate_mbps) = stats.report_statistics(client_stats);
+                    stats.report_statistics_MTP(cls, bitrate_mbps);
 
                     let server_data_lock = SERVER_DATA_MANAGER.read();
                     BITRATE_MANAGER.lock().report_frame_latencies(
