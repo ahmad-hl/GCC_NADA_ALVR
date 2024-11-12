@@ -8,7 +8,7 @@ use std::{
 use csv::Writer;
 use std::fs::OpenOptions;
 use std::error::Error;
-const FULL_REPORT_INTERVAL: Duration = Duration::from_millis(500);
+const FULL_REPORT_INTERVAL: Duration = Duration::from_millis(1000);
 use chrono::{Utc, TimeZone, Local, format::{strftime, StrftimeItems}};
 use crate::GCC_BANDWIDTH_ESTIMATOR;
 pub struct HistoryFrame {
@@ -69,7 +69,7 @@ struct BatteryData {
     gauge_value: f32,
     is_plugged: bool,
 }
-fn write_MTP_latency_to_csv(filename: &str, latency_values: [String; 14]) -> Result<(), Box<dyn Error>> {
+fn write_MTP_latency_to_csv(filename: &str, latency_values: [String; 17]) -> Result<(), Box<dyn Error>> {
     let mut file = OpenOptions::new().write(true).append(true).open(filename)?;
     let mut writer = Writer::from_writer(file);
     // Write the latency strings in the next row
@@ -88,9 +88,9 @@ fn write_MTP_latency_to_csv(filename: &str, latency_values: [String; 14]) -> Res
         &latency_values[11],
         &latency_values[12],
         &latency_values[13],
-        //&latency_values[14],
-        // &latency_values[15],
-        // &latency_values[16],
+        &latency_values[14],
+        &latency_values[15],
+        &latency_values[16],
         // &latency_values[17],
         // &latency_values[18],
         // &latency_values[19],
@@ -193,6 +193,7 @@ pub struct StatisticsManager {
     last_vsync_time: Instant,
     frame_interval: Duration,
     last_nominal_bitrate_stats: NominalBitrateStats,
+    gcc_target_bitrate_mbps: f64,
 }
 
 impl StatisticsManager {
@@ -225,6 +226,7 @@ impl StatisticsManager {
             last_vsync_time: Instant::now(),
             frame_interval: nominal_server_frame_interval,
             last_nominal_bitrate_stats: NominalBitrateStats::default(),
+            gcc_target_bitrate_mbps: 150.,
         }
     }
 
@@ -339,7 +341,7 @@ impl StatisticsManager {
     pub fn report_nominal_bitrate_stats(&mut self, stats: NominalBitrateStats) {
         self.last_nominal_bitrate_stats = stats;
     }
-    pub fn report_statistics_MTP(&mut self, client_stats: ClientStatistics,bitrate_mbps: String) {
+    pub fn report_statistics_MTP(&mut self, client_stats: ClientStatistics,bitrate_mbps: String,recv_bitrate_mbps:String) {
         if let Some(frame) = self
             .history_buffer
             .iter_mut()
@@ -393,7 +395,7 @@ impl StatisticsManager {
                 let experiment_target_timestamp=Local::now().format("%Y%m%d_%H%M%S").to_string();
                 //let controller_string = controller;
                 let latency_strings=[timestamp_for_this_frame,interval_trackingReceived_framePresentInVirtualDevice,interval_framePresentInVirtualDevice_frameComposited,interval_frameComposited_VideoEncoded,interval_VideoReceivedByClient_VideoDecoded,interval_network,
-            client_dequeue_latency,client_rendering_latency,client_vsync_queue_latency,interval_total_pipeline,encoded_frame_size,server_fps.to_string(),bitrate_mbps,experiment_target_timestamp];
+            client_dequeue_latency,client_rendering_latency,client_vsync_queue_latency,interval_total_pipeline,encoded_frame_size,server_fps.to_string(),client_fps.to_string(),bitrate_mbps,recv_bitrate_mbps,self.gcc_target_bitrate_mbps.to_string(),experiment_target_timestamp];
                 write_MTP_latency_to_csv("statistics_mtp.csv", latency_strings);
                 frame.MTP_reported = true;
         }
@@ -527,6 +529,7 @@ impl StatisticsManager {
             }));
 
             let gcc_target_bitrate_bps = GCC_BANDWIDTH_ESTIMATOR.lock().Update(frame.frame_send_timestamp as f64, client_stats.frame_arrival_timestamp as f64, frame.video_packet_bytes as i64);
+            self.gcc_target_bitrate_mbps = gcc_target_bitrate_bps/1000./1000.;
             let timestamp_for_this_frame=(frame.target_timestamp.as_nanos()).to_string();
             let interval_trackingReceived_framePresentInVirtualDevice=(game_time_latency.as_secs_f32()*1000.).to_string();//game latency
             let interval_framePresentInVirtualDevice_frameComposited=(server_compositor_latency.as_secs_f32()*1000.).to_string();//composite latency

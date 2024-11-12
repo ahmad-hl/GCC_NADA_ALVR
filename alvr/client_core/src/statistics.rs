@@ -6,7 +6,7 @@ use std::{
 };
 use chrono::{Utc, TimeZone};
 
-
+const FULL_REPORT_INTERVAL: Duration = Duration::from_millis(1000);
 
 struct HistoryFrame {
     input_acquired: Instant,
@@ -20,6 +20,8 @@ pub struct StatisticsManager {
     prev_vsync: Instant,
     total_pipeline_latency_average: SlidingWindowAverage<Duration>,
     steamvr_pipeline_latency: Duration,
+    recv_size_sum: usize,
+    last_bitrate_report_instant: Instant,
 }
 
 impl StatisticsManager {
@@ -39,6 +41,8 @@ impl StatisticsManager {
             steamvr_pipeline_latency: Duration::from_secs_f32(
                 steamvr_pipeline_frames * nominal_server_frame_interval.as_secs_f32(),
             ),
+            recv_size_sum:0,
+            last_bitrate_report_instant: Instant::now(),
         }
     }
 
@@ -64,7 +68,7 @@ impl StatisticsManager {
         }
     }
 
-    pub fn report_video_packet_received(&mut self, target_timestamp: Duration, arrival_ts: i64) {
+    pub fn report_video_packet_received(&mut self, target_timestamp: Duration, arrival_ts: i64,size:  usize) {
         if let Some(frame) = self
             .history_buffer
             .iter_mut()
@@ -72,6 +76,15 @@ impl StatisticsManager {
         {
             frame.video_packet_received = Instant::now();
             frame.client_stats.frame_arrival_timestamp=arrival_ts;
+            self.recv_size_sum +=size;
+            if self.last_bitrate_report_instant + FULL_REPORT_INTERVAL < Instant::now() {
+                self.last_bitrate_report_instant += FULL_REPORT_INTERVAL;
+                let interval_secs = FULL_REPORT_INTERVAL.as_secs_f32();
+                frame.client_stats.recv_bitrate_report_mbps = (self.recv_size_sum as f32 * 8.
+                / 1e6
+                / interval_secs);
+                self.recv_size_sum = 0;
+            }
         }
     }
 

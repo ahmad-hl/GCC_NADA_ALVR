@@ -205,6 +205,7 @@ pub struct ClientStatistics {
     pub vsync_queue: Duration,
     pub total_pipeline_latency: Duration,
     pub frame_arrival_timestamp:i64,
+    pub recv_bitrate_report_mbps: f32,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

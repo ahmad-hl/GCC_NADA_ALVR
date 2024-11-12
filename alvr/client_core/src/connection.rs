@@ -301,7 +301,7 @@ fn connection_pipeline(
             };
             let arrival_timestamp = Utc::now().timestamp_micros();
             if let Some(stats) = &mut *STATISTICS_MANAGER.lock() {
-                stats.report_video_packet_received(header.timestamp, arrival_timestamp);
+                stats.report_video_packet_received(header.timestamp, arrival_timestamp,nal.len());
             }
 
             if header.is_idr {

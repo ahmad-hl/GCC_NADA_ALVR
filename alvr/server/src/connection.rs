@@ -78,43 +78,22 @@ fn create_csv_file_for_MTP_statistics(filename: &str) -> Result<(), Box<dyn Erro
         let mut writer = WriterBuilder::new().has_headers(false).from_writer(File::create(filename)?);
         // Write the column names in the first row
         writer.write_record(&[
-            "target_ts(nanos)",
-            "game latency(ms)",
-            "composite latency(ms)",
-            "encode latency(ms)",
-            "decode latency(ms)",
-            "network latency(ms)",
-            "decoder_queue_latency(ms)",
-            "rendering(ms)",
-            "vsync_queue_latency(ms)",
-            "total latency(ms)",
-            // "target bitrate(mps)",
-            // "total size for this frame(encoded)(bytes)",
-            // "send_ts(ms)",
-            // "arrival_ts(ms)",
-            "enconded frame size(bytes)",
-            "Frame rate(FPS)",
-            // "client_fps(frame per second)",
-            
-            "bitrate_mbps",
+            "target_ts_nanos",
+            "game_latency_ms",
+            "composite_latency_ms",
+            "encode_latency_ms",
+            "decode_latency_ms",
+            "network_latency_ms",
+            "decoder_queue_latency_ms",
+            "rendering_latency_ms",
+            "vsync_queue_latency_ms",
+            "total_MTP_latency_ms",
+            "enconded_frame_size_bytes",
+            "server_framerate_fps",
+            "client_framerate_fps",
+            "sending_bitrate_mbps",
+            "recving_bitrate_mbps",
             "experiment_target_timestamp",
-            // "current_state",
-            // "current_action",
-            // "modified_trend",
-            // "threshold",
-            // "send_delta_ts",
-            // "arrival_delta_ts",
-            // "delta_ts",
-            // "client_recv_times",
-            // "had_pkt_loss",
-            // "push_decode_failed",
-           
-            // "tracking_recv_times",
-            // "frame_present_times",
-            // "frame_composition_times",
-            // "frame_encoded_times",
-            // "frame_send_times",
-            // "tracking_recv_ts"
         ])?;
     } else {
         println!("File '{}' already exists, skipping creation.", filename);
@@ -146,6 +125,7 @@ fn create_csv_file_for_statistics(filename: &str) -> Result<(), Box<dyn Error>> 
             "client_fps(frame per second)",
             "target_bitrate_bps",
             "bitrate_mbps",
+            "gcc_target_bitrate_mbps",
             "experiment_target_timestamp",
         ])?;
     } else {
@@ -1089,8 +1069,11 @@ fn connection_pipeline(
                     let decoder_latency = client_stats.video_decode;
                     let cls = client_stats.clone();
                     let (network_latency,bitrate_mbps) = stats.report_statistics(client_stats);
-                    stats.report_statistics_MTP(cls, bitrate_mbps);
-
+                    let mut recv_bitrate_mbps = "".to_string();
+                    if cls.recv_bitrate_report_mbps != 0.0{
+                        recv_bitrate_mbps = cls.recv_bitrate_report_mbps.to_string();
+                    }
+                    stats.report_statistics_MTP(cls, bitrate_mbps,recv_bitrate_mbps);
                     let server_data_lock = SERVER_DATA_MANAGER.read();
                     BITRATE_MANAGER.lock().report_frame_latencies(
                         &server_data_lock.settings().video.bitrate.mode,
