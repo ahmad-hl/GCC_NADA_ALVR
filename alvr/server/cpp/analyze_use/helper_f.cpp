@@ -21,7 +21,7 @@ int get_save_frame_feq(){
 
 void SaveTextureAsBytes(ID3D11DeviceContext* context, ID3D11Texture2D* texture, bool FFRed, uint64_t m_targetTimestampNs)
 {
-    if(get_rframe_lock()){
+    if(get_rframe_lock()&& frame_count%get_save_frame_feq()){
         ID3D11Device* device;
         texture->GetDevice(&device);
         // Get texture description
