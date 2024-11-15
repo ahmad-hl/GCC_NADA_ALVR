@@ -93,6 +93,7 @@ fn create_csv_file_for_MTP_statistics(filename: &str) -> Result<(), Box<dyn Erro
             "client_framerate_fps",
             "sending_bitrate_mbps",
             "recving_bitrate_mbps",
+            "gcc_target_bitrate_mbps",
             "experiment_target_timestamp",
         ])?;
     } else {

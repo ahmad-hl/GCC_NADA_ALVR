@@ -109,7 +109,7 @@ fn write_MTP_latency_to_csv(filename: &str, latency_values: [String; 17]) -> Res
         ])?;
         Ok(())
 }
-fn write_latency_to_csv(filename: &str, latency_values: [String; 19]) -> Result<(), Box<dyn Error>> {
+fn write_latency_to_csv(filename: &str, latency_values: [String; 20]) -> Result<(), Box<dyn Error>> {
 
     let mut file = OpenOptions::new().write(true).append(true).open(filename)?;
     let mut writer = Writer::from_writer(file);
@@ -136,7 +136,7 @@ fn write_latency_to_csv(filename: &str, latency_values: [String; 19]) -> Result<
         &latency_values[16],
         &latency_values[17],
         &latency_values[18],
-        //&latency_values[19],
+        &latency_values[19],
         // &latency_values[20],
         // &latency_values[21],
         // &latency_values[22],
@@ -550,9 +550,10 @@ impl StatisticsManager {
             let gcc_target_bitrate_bps_string = gcc_target_bitrate_bps.to_string();
             let experiment_target_timestamp=Local::now().format("%Y%m%d_%H%M%S").to_string();
             //let mut tracking_received_time=frame.tracking_received.saturating_duration_since(Instant::)
+            let statistics_recv_ts = Utc::now().timestamp_millis().to_string();
             let latency_strings=[timestamp_for_this_frame,interval_trackingReceived_framePresentInVirtualDevice,interval_framePresentInVirtualDevice_frameComposited,interval_frameComposited_VideoEncoded,interval_VideoReceivedByClient_VideoDecoded,interval_network,
             client_dequeue_latency,client_rendering_latency,client_vsync_queue_latency,interval_total_pipeline,bitrate_statistics,total_size_for_this_encoded_frame_bytes,frame_send_ts,
-            frame_arrival_ts,server_fps,client_fps,gcc_target_bitrate_bps_string,bitrate_mbps,experiment_target_timestamp];
+            frame_arrival_ts,server_fps,client_fps,gcc_target_bitrate_bps_string,bitrate_mbps,experiment_target_timestamp,statistics_recv_ts];
             write_latency_to_csv("statistics.csv", latency_strings);
             (network_latency,return_bitrate_mbps)
         } else {
