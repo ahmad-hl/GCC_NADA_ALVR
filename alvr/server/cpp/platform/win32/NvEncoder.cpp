@@ -10,7 +10,7 @@
 */
 
 #include "NvEncoder.h"
-#include "../../analyze_used/helper_f.h"
+#include "../../analyze_use/helper_f.h"
 
 #ifndef _WIN32
 #include <cstring>
