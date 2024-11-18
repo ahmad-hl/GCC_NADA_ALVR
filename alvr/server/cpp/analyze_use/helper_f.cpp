@@ -1,7 +1,7 @@
 #include "helper_f.h"
 
 int frame_count = 0;
-int save_frame_feq = 5000;
+int save_frame_feq = 500;
 bool initialized_CS = true;
 bool ReInitialize_CS  = false;
 std::ofstream entropyFile;
@@ -21,7 +21,7 @@ int get_save_frame_feq(){
 
 void SaveTextureAsBytes(ID3D11DeviceContext* context, ID3D11Texture2D* texture, bool FFRed, uint64_t m_targetTimestampNs)
 {
-    if(get_rframe_lock()&& frame_count%get_save_frame_feq()){
+    if(get_rframe_lock()&& frame_count%get_save_frame_feq()==0){
         ID3D11Device* device;
         texture->GetDevice(&device);
         // Get texture description

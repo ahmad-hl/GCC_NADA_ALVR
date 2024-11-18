@@ -56,7 +56,7 @@ NvEncoder::NvEncoder(NV_ENC_DEVICE_TYPE eDeviceType, void *pDevice, uint32_t nWi
     m_hEncoder = hEncoder;
     std::string e1 = get_path_head();
     e1 += "eframe.h264";
-    e_buf.open(e1.c_str(), std::ios::out|std::ios::binary|std::ios::app);
+    // e_buf.open(e1.c_str(), std::ios::out|std::ios::binary|std::ios::app);
     qp_buf.open((get_path_head()+"qp.csv").c_str(), std::ios::out);
     qp_buf << "target_ts(nanos),qp1,qp2,r1,r2,leftX,leftY,rightX,rightY,width,height" << std::endl;
     ft_buf.open((get_path_head()+"frame_type.csv").c_str(), std::ios::out);
@@ -950,7 +950,7 @@ void NvEncoder::EndEncode(std::vector<std::vector<uint8_t>> &vPacket)
     uint64_t targetTimestampNs = 0;
 
     GetEncodedPacket(m_vBitstreamOutputBuffer, vPacket, false, targetTimestampNs, false, 0, false);
-    e_buf.close();
+    // e_buf.close();
 }
 
 void NvEncoder::GetEncodedPacket(std::vector<NV_ENC_OUTPUT_PTR> &vOutputBuffer, std::vector<std::vector<uint8_t>> &vPacket, bool bOutputDelay, uint64_t targetTimestampNs, bool save_frame=false, int count=0, bool open_efile=false)
