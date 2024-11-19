@@ -16,11 +16,6 @@ int get_save_frame_feq(){
     return save_frame_feq;
 }
 
-std::string filename_s = "C:\\AT\\QP_manager\\build\\alvr_streamer_windows\\";
-
-std::string get_path_head(){
-    return filename_s;
-}
 
 void SaveTextureAsBytes(ID3D11DeviceContext* context, ID3D11Texture2D* texture, std::string name)
 {
