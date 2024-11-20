@@ -9,7 +9,7 @@
 #include "alvr_server/Logger.h"
 #include "alvr_server/Settings.h"
 #include "alvr_server/Utils.h"
-#include "../../analyze_used/helper_f.h"
+#include "../../analyze_use/helper_f.h"
 
 bool testing = true;
 //int count = 0;
@@ -155,7 +155,7 @@ void VideoEncoderNVENC::Transmit(ID3D11Texture2D *pTexture, uint64_t presentatio
 	// 	saveFrame = true;
 	// 	SaveTextureAsBytes(m_pD3DRender->GetContext(), pTexture, "test.bytes");
 	// }
-	m_NvNecoder->EncodeFrame(vPacket, &picParams);
+	m_NvNecoder->EncodeFrame(vPacket, targetTimestampNs, &picParams);
 
 	for (std::vector<uint8_t> &packet : vPacket)
 	{

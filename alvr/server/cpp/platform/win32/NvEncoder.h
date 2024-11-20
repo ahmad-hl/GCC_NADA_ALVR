@@ -20,6 +20,8 @@
 #include <sstream>
 #include <string.h>
 #include "NvCodecUtils.h"
+#include <cmath>
+#include "../../analyze_use/config.h"
 
 /**
 * @brief Exception class for error reporting from NvEncodeAPI calls.
@@ -124,7 +126,7 @@ public:
     *  data, which has been copied to an input buffer obtained from the
     *  GetNextInputFrame() function.
     */
-    virtual void EncodeFrame(std::vector<std::vector<uint8_t>> &vPacket, NV_ENC_PIC_PARAMS *pPicParams = nullptr);
+    virtual void EncodeFrame(std::vector<std::vector<uint8_t>> &vPacket, uint64_t targetTimestampNs, NV_ENC_PIC_PARAMS *pPicParams = nullptr);
 
     /**
     *  @brief  This function to flush the encoder queue.
@@ -361,7 +363,7 @@ private:
     *  This is called by DoEncode() function. If there is buffering enabled,
     *  this may return without any output data.
     */
-    void GetEncodedPacket(std::vector<NV_ENC_OUTPUT_PTR> &vOutputBuffer, std::vector<std::vector<uint8_t>> &vPacket, bool bOutputDelay, bool saveFrame, int count, bool open);
+    void GetEncodedPacket(std::vector<NV_ENC_OUTPUT_PTR> &vOutputBuffer, std::vector<std::vector<uint8_t>> &vPacket, bool bOutputDelay, uint64_t targetTimestampNs, bool saveFrame, int count, bool open_efile);
 
     /**
     *  @brief This is a private function which is used to initialize the bitstream buffers.

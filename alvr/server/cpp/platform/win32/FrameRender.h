@@ -18,6 +18,7 @@
 #include "shared/d3drender.h"
 #include "openvr_driver.h"
 #include "FFR.h"
+#include "../../analyze_use/helper_f.h"
 
 #define GPU_PRIORITY_VAL 7
 
@@ -50,11 +51,11 @@ public:
 	bool RenderFrame(ID3D11Texture2D *pTexture[][2], vr::VRTextureBounds_t bounds[][2], int layerCount, bool recentering, const std::string& message, const std::string& debugText);
 	void GetEncodingResolution(uint32_t *width, uint32_t *height);
 
-	ComPtr<ID3D11Texture2D> GetTexture(bool saving);
+	ComPtr<ID3D11Texture2D> GetTexture(bool saving, uint64_t m_targetTimestampNs);
 private:
 	std::shared_ptr<CD3DRender> m_pD3DRender;
 	ComPtr<ID3D11Texture2D> m_pStagingTexture;
-	ID3D11Texture2D* m_pCheckingTexture;
+	ComPtr<ID3D11Texture2D> m_pCheckingTexture;
 
 	ComPtr<ID3D11VertexShader> m_pVertexShader;
 	ComPtr<ID3D11PixelShader> m_pPixelShader;

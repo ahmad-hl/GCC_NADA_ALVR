@@ -5,7 +5,7 @@
 #include "alvr_server/bindings.h"
 #include <fstream>
 #include <iostream>
-#include "../../analyze_used/helper_f.h"
+#include "../../analyze_use/helper_f.h"
 
 extern uint64_t g_DriverTestMode;
 
@@ -526,17 +526,12 @@ bool FrameRender::RenderFrame(ID3D11Texture2D *pTexture[][2], vr::VRTextureBound
 //     stagingTexture->Release();
 // }
 
-ComPtr<ID3D11Texture2D> FrameRender::GetTexture(bool saving)
+ComPtr<ID3D11Texture2D> FrameRender::GetTexture(bool saving, uint64_t m_targetTimestampNs)
 {
-	if(saving&&(get_frame_count()%get_save_frame_feq()==0)){
-		std::string o1 = "oframe_";
-		o1 += std::to_string(get_frame_count());
-		o1 += ".bytes";
-		SaveTextureAsBytes(m_pD3DRender->GetContext(), m_pCheckingTexture, o1);
-		std::string r1 = "rframe_";
-		r1 += std::to_string(get_frame_count());
-		r1 += ".bytes";
-		SaveTextureAsBytes(m_pD3DRender->GetContext(), m_pStagingTexture.Get(), r1);
+	if(saving){
+		SaveTextureAsBytes(m_pD3DRender->GetContext(), m_pCheckingTexture.Get(), false, m_targetTimestampNs);
+		SaveTextureAsBytes(m_pD3DRender->GetContext(), m_pStagingTexture.Get(), true, m_targetTimestampNs);
+		add_frame_count();
 	}
 	return m_pStagingTexture;
 }
