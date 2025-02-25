@@ -343,7 +343,7 @@ impl StatisticsManager {
             let send_ts_ms=frame.frame_send_timestamp.to_string();
             let experiment_target_timestamp=Local::now().format("%Y%m%d_%H%M%S").to_string();
             let latency_strings=[target_ts_nanos,game_latency_ms,composite_latency_ms,encode_latency_ms,encoded_frame_size,bitrate_mbps,gcc_target_bitrate_mbps,send_ts_ms,experiment_target_timestamp];
-            write_pending_stats_to_csv("statistics_pending.csv", latency_strings);
+            write_pending_stats_to_csv("gcc_statistics_pending.csv", latency_strings);
 
         }
     }
@@ -586,7 +586,7 @@ impl StatisticsManager {
             let latency_strings=[timestamp_for_this_frame,interval_trackingReceived_framePresentInVirtualDevice,interval_framePresentInVirtualDevice_frameComposited,interval_frameComposited_VideoEncoded,interval_VideoReceivedByClient_VideoDecoded,interval_network,
             client_dequeue_latency,client_rendering_latency,client_vsync_queue_latency,interval_total_pipeline,server_fps,client_fps,total_size_for_this_encoded_frame_bytes,gcc_target_bitrate_mbps_string,bitrate_mbps, client_stats.recv_bitrate_report_mbps.to_string(),frame_send_ts,
             frame_arrival_ts,experiment_target_timestamp];
-            write_latency_to_csv("statistics.csv", latency_strings);
+            write_latency_to_csv("gcc_statistics.csv", latency_strings);
             (network_latency,return_bitrate_mbps)
         } else {
             (Duration::ZERO,"".to_string())

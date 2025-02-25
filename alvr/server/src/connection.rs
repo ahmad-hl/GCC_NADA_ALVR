@@ -1070,9 +1070,8 @@ fn connection_pipeline(
 
     let statistics_thread = thread::spawn({
         let client_hostname = client_hostname.clone();
-        create_csv_file_for_statistics("statistics.csv");
-        create_csv_file_for_MTP_statistics("statistics_mtp.csv");
-        create_csv_file_for_pending_statistics("statistics_pending.csv");
+        create_csv_file_for_statistics("gcc_statistics.csv");
+        create_csv_file_for_pending_statistics("gcc_statistics_pending.csv");
         move || {
             while is_streaming(&client_hostname) {
                 let data = match statics_receiver.recv(STREAMING_RECV_TIMEOUT) {
