@@ -59,6 +59,7 @@ impl Default for HistoryFrame {
             tracking_rece_times: 0,
             frame_present_times: 0,
             MTP_reported: false,
+
             
         }
     }
@@ -109,7 +110,7 @@ fn write_MTP_latency_to_csv(filename: &str, latency_values: [String; 17]) -> Res
         ])?;
         Ok(())
 }
-fn write_latency_to_csv(filename: &str, latency_values: [String; 20]) -> Result<(), Box<dyn Error>> {
+fn write_latency_to_csv(filename: &str, latency_values: [String; 19]) -> Result<(), Box<dyn Error>> {
 
     let mut file = OpenOptions::new().write(true).append(true).open(filename)?;
     let mut writer = Writer::from_writer(file);
@@ -136,40 +137,34 @@ fn write_latency_to_csv(filename: &str, latency_values: [String; 20]) -> Result<
         &latency_values[16],
         &latency_values[17],
         &latency_values[18],
-        &latency_values[19],
-        // &latency_values[20],
-        // &latency_values[21],
-        // &latency_values[22],
-        // &latency_values[23],
-        // &latency_values[24],
-        // &latency_values[25],
-        // &latency_values[26],
-        // &latency_values[27],
-        // &latency_values[28],
-        // &latency_values[29],
-        // &latency_values[30],
-        // &latency_values[31],
-        // &latency_values[32],
-        // &latency_values[33],
-        // &latency_values[34],
-        // &latency_values[35],
-        // &latency_values[36],
-        // &latency_values[37],
-        // &latency_values[38],
-        // &latency_values[39],
-        // &latency_values[40],
-        // &latency_values[41],
-        // &latency_values[42],
-        // &latency_values[43],
-        // &latency_values[44],
-        // &latency_values[45],
-        // &latency_values[46],
-        // &latency_values[47],
+
+       
 
 
 
 
 
+
+    ])?;
+
+    Ok(())
+}
+fn write_pending_stats_to_csv(filename: &str, latency_values: [String; 9]) -> Result<(), Box<dyn Error>> {
+
+    let mut file = OpenOptions::new().write(true).append(true).open(filename)?;
+    let mut writer = Writer::from_writer(file);
+
+    // Write the latency strings in the next row
+    writer.write_record(&[
+        &latency_values[0],
+        &latency_values[1],
+        &latency_values[2],
+        &latency_values[3],
+        &latency_values[4],
+        &latency_values[5],
+        &latency_values[6],
+        &latency_values[7],
+        &latency_values[8],
 
     ])?;
 
@@ -194,6 +189,10 @@ pub struct StatisticsManager {
     frame_interval: Duration,
     last_nominal_bitrate_stats: NominalBitrateStats,
     gcc_target_bitrate_mbps: f64,
+    video_bytes_partial_sum_pending: usize,
+    last_time_bitrate_report_for_pending: Instant,
+
+
 }
 
 impl StatisticsManager {
@@ -227,6 +226,8 @@ impl StatisticsManager {
             frame_interval: nominal_server_frame_interval,
             last_nominal_bitrate_stats: NominalBitrateStats::default(),
             gcc_target_bitrate_mbps: 150.,
+            video_bytes_partial_sum_pending: 0,
+            last_time_bitrate_report_for_pending: Instant::now(),
         }
     }
 
@@ -293,6 +294,7 @@ impl StatisticsManager {
         self.video_packets_partial_sum += 1;
         self.video_bytes_total += bytes_count;
         self.video_bytes_partial_sum += bytes_count;
+        self.video_bytes_partial_sum_pending += bytes_count;
 
         if let Some(frame) = self
             .history_buffer
@@ -313,6 +315,36 @@ impl StatisticsManager {
                 .saturating_duration_since(frame.frame_composed)
         } else {
             Duration::ZERO
+        }
+        
+    }
+    pub fn report_pending_stats(&mut self,target_timestamp: Duration){
+        if let Some(frame) = self
+            .history_buffer
+            .iter_mut()
+            .find(|frame| frame.target_timestamp == target_timestamp)
+        {
+            let target_ts_nanos=(frame.target_timestamp.as_nanos()).to_string();
+            let game_latency_ms=(frame.frame_present.saturating_duration_since(frame.tracking_received).as_secs_f32()*1000.).to_string();
+            let composite_latency_ms=(frame.frame_composed.saturating_duration_since(frame.frame_present).as_secs_f32()*1000.).to_string();
+            let encode_latency_ms=(frame.frame_encoded.saturating_duration_since(frame.frame_composed).as_secs_f32()*1000.).to_string();
+            let encoded_frame_size=frame.video_packet_bytes.to_string();
+            let mut bitrate_mbps = "".to_string();
+            if self.last_time_bitrate_report_for_pending + FULL_REPORT_INTERVAL < Instant::now() {
+                self.last_time_bitrate_report_for_pending += FULL_REPORT_INTERVAL;
+
+                let interval_secs = FULL_REPORT_INTERVAL.as_secs_f32();
+                bitrate_mbps = (self.video_bytes_partial_sum_pending as f32 * 8.
+                    / 1e6
+                    / interval_secs).to_string();
+                self.video_bytes_partial_sum_pending = 0;
+            }
+            let gcc_target_bitrate_mbps=(self.gcc_target_bitrate_mbps).to_string();
+            let send_ts_ms=frame.frame_send_timestamp.to_string();
+            let experiment_target_timestamp=Local::now().format("%Y%m%d_%H%M%S").to_string();
+            let latency_strings=[target_ts_nanos,game_latency_ms,composite_latency_ms,encode_latency_ms,encoded_frame_size,bitrate_mbps,gcc_target_bitrate_mbps,send_ts_ms,experiment_target_timestamp];
+            write_pending_stats_to_csv("statistics_pending.csv", latency_strings);
+
         }
     }
     pub fn report_send_timestamp(&mut self,target_timestamp: Duration, send_ts: i64)
@@ -547,13 +579,13 @@ impl StatisticsManager {
             let frame_arrival_ts=client_stats.frame_arrival_timestamp.to_string();
             let server_fps=server_fps.to_string();
             let client_fps=client_fps.to_string();
-            let gcc_target_bitrate_bps_string = gcc_target_bitrate_bps.to_string();
+            let gcc_target_bitrate_mbps_string = (gcc_target_bitrate_bps/1e6).to_string();
             let experiment_target_timestamp=Local::now().format("%Y%m%d_%H%M%S").to_string();
             //let mut tracking_received_time=frame.tracking_received.saturating_duration_since(Instant::)
             let statistics_recv_ts = Utc::now().timestamp_millis().to_string();
             let latency_strings=[timestamp_for_this_frame,interval_trackingReceived_framePresentInVirtualDevice,interval_framePresentInVirtualDevice_frameComposited,interval_frameComposited_VideoEncoded,interval_VideoReceivedByClient_VideoDecoded,interval_network,
-            client_dequeue_latency,client_rendering_latency,client_vsync_queue_latency,interval_total_pipeline,bitrate_statistics,total_size_for_this_encoded_frame_bytes,frame_send_ts,
-            frame_arrival_ts,server_fps,client_fps,gcc_target_bitrate_bps_string,bitrate_mbps,experiment_target_timestamp,statistics_recv_ts];
+            client_dequeue_latency,client_rendering_latency,client_vsync_queue_latency,interval_total_pipeline,server_fps,client_fps,total_size_for_this_encoded_frame_bytes,gcc_target_bitrate_mbps_string,bitrate_mbps, client_stats.recv_bitrate_report_mbps.to_string(),frame_send_ts,
+            frame_arrival_ts,experiment_target_timestamp];
             write_latency_to_csv("statistics.csv", latency_strings);
             (network_latency,return_bitrate_mbps)
         } else {

@@ -56,17 +56,16 @@ Cflags: -I${{includedir}}
 
 pub fn prepare_ffmpeg_windows() {
     let download_path = afs::deps_dir().join("windows");
-    command::download_and_extract_zip(
-        &format!(
-            "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/{}",
-            "ffmpeg-n5.1-latest-win64-gpl-shared-5.1.zip"
-        ),
-        &download_path,
-    )
-    .unwrap();
+    let url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n6.1-latest-win64-gpl-shared-6.1.zip";
+
+    // Attempt to download and extract the zip file
+    if let Err(e) = command::download_and_extract_zip(url, &download_path) {
+        eprintln!("Failed to download or extract FFmpeg: {}", e);
+        return;
+    }
 
     fs::rename(
-        download_path.join("ffmpeg-n5.1-latest-win64-gpl-shared-5.1"),
+        download_path.join("ffmpeg-n6.1-latest-win64-gpl-shared-6.1"),
         download_path.join("ffmpeg"),
     )
     .unwrap();

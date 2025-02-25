@@ -101,33 +101,51 @@ fn create_csv_file_for_MTP_statistics(filename: &str) -> Result<(), Box<dyn Erro
     }
     Ok(())
 }
+fn create_csv_file_for_pending_statistics(filename: &str) -> Result<(), Box<dyn Error>> {
+    if !fs::metadata(filename).is_ok() {
+        let mut writer = WriterBuilder::new().has_headers(false).from_writer(File::create(filename)?);
+        // Write the column names in the first row
+        writer.write_record(&[
+            "target_ts_nanos",
+            "game_latency_ms",
+            "composite_latency_ms",
+            "encode_latency_ms",
+            "enconded_frame_size_bytes",
+            "sending_bitrate_mbps",
+            "target_bitrate_mbps",
+            "send_ts_ms",
+            "linux_timestamp",
+        ])?;
+    } else {
+        println!("File '{}' already exists, skipping creation.", filename);
+    }
+    Ok(())
+}
 fn create_csv_file_for_statistics(filename: &str) -> Result<(), Box<dyn Error>> {
     if !fs::metadata(filename).is_ok() {
         let mut writer = WriterBuilder::new().has_headers(false).from_writer(File::create(filename)?);
 
         // Write the column names in the first row
         writer.write_record(&[
-            "target_ts(nanos)",
-            "game latency(ms)",
-            "composite latency(ms)",
-            "encode latency(ms)",
-            "decode latency(ms)",
-            "network latency(ms)",
-            "decode_latency(ms)",
-            "decoder_queue_latency(ms)",
-            "rendering(ms)",
-            "vsync_queue_latency(ms)",
-            "total latency(ms)",
-            "",
-            "total size for this frame(encoded)(bytes)",
-            "send_ts(ms)",
-            "arrival_ts(ms)",
-            "server_fps(frame per second)",
-            "client_fps(frame per second)",
-            "target_bitrate_bps",
-            "bitrate_mbps",
-            "gcc_target_bitrate_mbps",
-            "experiment_target_timestamp",
+            "target_ts_nanos",
+            "game_latency_ms",
+            "composite_latency_ms",
+            "encode_latency_ms",
+            "decode_latency_ms",
+            "network_latency_ms",
+            "decoder_queue_latency_ms",
+            "rendering_ms",
+            "vsync_queue_latency_ms",
+            "total_latency_ms",
+            "server_fps",
+            "client_fps",
+            "encoded_frame_size_bytes",
+            "target_bitrate_mbps",
+            "send_bitrate_mbps",
+            "receive_bitrate_mbps",
+            "send_ts_ms",
+            "arrival_ts_ms",
+            "linux_timestamp",
         ])?;
     } else {
         println!("File '{}' already exists, skipping creation.", filename);
@@ -1054,6 +1072,7 @@ fn connection_pipeline(
         let client_hostname = client_hostname.clone();
         create_csv_file_for_statistics("statistics.csv");
         create_csv_file_for_MTP_statistics("statistics_mtp.csv");
+        create_csv_file_for_pending_statistics("statistics_pending.csv");
         move || {
             while is_streaming(&client_hostname) {
                 let data = match statics_receiver.recv(STREAMING_RECV_TIMEOUT) {
@@ -1468,7 +1487,7 @@ pub extern "C" fn send_video(timestamp_ns: u64, buffer_ptr: *mut u8, len: i32, i
         if let Some(stats) = &mut *STATISTICS_MANAGER.lock() {
             let encoder_latency =
                 stats.report_frame_encoded(Duration::from_nanos(timestamp_ns), buffer_size);
-
+            stats.report_pending_stats(Duration::from_nanos(timestamp_ns));
             BITRATE_MANAGER
                 .lock()
                 .report_frame_encoded(timestamp, encoder_latency, buffer_size);

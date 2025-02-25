@@ -1234,7 +1234,7 @@ pub fn session_settings_default() -> SettingsDefault {
                 }
             },
             foveated_encoding: SwitchDefault {
-                enabled: false,
+                enabled: true,
                 content: FoveatedEncodingConfigDefault {
                     gui_collapsed: true,
                     center_size_x: 0.45,
@@ -1329,7 +1329,7 @@ pub fn session_settings_default() -> SettingsDefault {
             tracking_ref_only: false,
             enable_vive_tracker_proxy: false,
             face_tracking: SwitchDefault {
-                enabled: true,
+                enabled: false,
                 content: FaceTrackingConfigDefault {
                     gui_collapsed: true,
                     sources: FaceTrackingSourcesConfigDefault {
