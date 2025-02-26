@@ -300,8 +300,9 @@ fn connection_pipeline(
                 return;
             };
             let arrival_timestamp = Utc::now().timestamp_micros();
+            let send_timestamp = header.frame_send_timestamp;
             if let Some(stats) = &mut *STATISTICS_MANAGER.lock() {
-                stats.report_video_packet_received(header.timestamp, arrival_timestamp,nal.len());
+                stats.report_video_packet_received(header.timestamp, arrival_timestamp,nal.len(),send_timestamp);
             }
 
             if header.is_idr {

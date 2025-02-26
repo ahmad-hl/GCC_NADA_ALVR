@@ -701,20 +701,21 @@ fn connection_pipeline(
         let client_hostname = client_hostname.clone();
         move || {
             while is_streaming(&client_hostname) {
-                let VideoPacket { header, payload } =
+                let VideoPacket { mut header, payload } =
                     match video_channel_receiver.recv_timeout(STREAMING_RECV_TIMEOUT) {
                         Ok(packet) => packet,
                         Err(RecvTimeoutError::Timeout) => continue,
                         Err(RecvTimeoutError::Disconnected) => return,
                     };//get encoded video packet from video_channel_sender
-
+                let send_timestamp = Utc::now().timestamp_micros();
+                header.frame_send_timestamp = send_timestamp;
                 let mut buffer = video_sender.get_buffer(&header).unwrap();
                 // todo: make encoder write to socket buffers directly to avoid copy
                 buffer
                     .get_range_mut(0, payload.len())
                     .copy_from_slice(&payload);
 
-                let send_timestamp = Utc::now().timestamp_micros();
+                
                 video_sender.send(buffer).ok();//tcp or udp real send out
                 if let Some(stats) = &mut *STATISTICS_MANAGER.lock() {
                     stats.report_send_timestamp(header.timestamp,send_timestamp);
@@ -1470,7 +1471,7 @@ pub extern "C" fn send_video(timestamp_ns: u64, buffer_ptr: *mut u8, len: i32, i
 
             if matches!(
                 sender.try_send(VideoPacket {
-                    header: VideoPacketHeader { timestamp, is_idr },
+                    header: VideoPacketHeader { timestamp, is_idr , frame_send_timestamp: 0},
                     payload,
                 }),
                 Err(TrySendError::Full(_))

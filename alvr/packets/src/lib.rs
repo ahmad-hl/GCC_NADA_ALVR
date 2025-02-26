@@ -113,6 +113,7 @@ pub struct FaceData {
 pub struct VideoPacketHeader {
     pub timestamp: Duration,
     pub is_idr: bool,
+    pub frame_send_timestamp: i64
 }
 
 // Note: face_data does not respect target_timestamp.

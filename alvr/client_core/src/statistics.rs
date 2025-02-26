@@ -12,6 +12,7 @@ struct HistoryFrame {
     input_acquired: Instant,
     video_packet_received: Instant,
     client_stats: ClientStatistics,
+    frame_send_timestamp: i64,
 }
 
 pub struct StatisticsManager {
@@ -60,6 +61,7 @@ impl StatisticsManager {
                     target_timestamp,
                     ..Default::default()
                 },
+                frame_send_timestamp: 0,
             });
         }
 
@@ -68,7 +70,7 @@ impl StatisticsManager {
         }
     }
 
-    pub fn report_video_packet_received(&mut self, target_timestamp: Duration, arrival_ts: i64,size:  usize) {
+    pub fn report_video_packet_received(&mut self, target_timestamp: Duration, arrival_ts: i64,size:  usize,frame_send_timestamp: i64) {
         if let Some(frame) = self
             .history_buffer
             .iter_mut()
@@ -76,6 +78,7 @@ impl StatisticsManager {
         {
             frame.video_packet_received = Instant::now();
             frame.client_stats.frame_arrival_timestamp=arrival_ts;
+            frame.frame_send_timestamp = frame_send_timestamp;
             self.recv_size_sum +=size;
             if self.last_bitrate_report_instant + FULL_REPORT_INTERVAL < Instant::now() {
                 self.last_bitrate_report_instant += FULL_REPORT_INTERVAL;
