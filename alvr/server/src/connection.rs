@@ -1,5 +1,5 @@
 use crate::{
-    bitrate::BitrateManager, face_tracking::FaceTrackingSink, gcc_network_controller::GccBandwidthEstimator, hand_gestures::{trigger_hand_gesture_actions, HandGestureManager, HAND_GESTURE_BUTTON_SET}, haptics, input_mapping::ButtonMappingManager, sockets::WelcomeSocket, statistics::StatisticsManager, tracking::{self, TrackingManager}, FfiFov, FfiViewsConfig, VideoPacket, BITRATE_MANAGER, DECODER_CONFIG, EYE_GAZE_DATA, GCC_BANDWIDTH_ESTIMATOR, LIFECYCLE_STATE, SERVER_DATA_MANAGER, STATISTICS_MANAGER, VIDEO_MIRROR_SENDER, VIDEO_RECORDING_FILE
+    bitrate::BitrateManager, face_tracking::FaceTrackingSink, hand_gestures::{trigger_hand_gesture_actions, HandGestureManager, HAND_GESTURE_BUTTON_SET}, haptics, input_mapping::ButtonMappingManager, nada_sender_side::NadaSender, sockets::WelcomeSocket, statistics::StatisticsManager, tracking::{self, TrackingManager}, FfiFov, FfiViewsConfig, VideoPacket, BITRATE_MANAGER, DECODER_CONFIG, EYE_GAZE_DATA, LIFECYCLE_STATE, NADA_SENDER, SERVER_DATA_MANAGER, STATISTICS_MANAGER, VIDEO_MIRROR_SENDER, VIDEO_RECORDING_FILE
 };
 use alvr_audio::AudioDevice;
 use alvr_common::{
@@ -672,7 +672,7 @@ fn connection_pipeline(
 
     *BITRATE_MANAGER.lock() = BitrateManager::new(settings.video.bitrate.history_size, fps);
 
-    *GCC_BANDWIDTH_ESTIMATOR.lock() = GccBandwidthEstimator::new();
+    *NADA_SENDER.lock() = NadaSender::new();
     let mut stream_socket = StreamSocketBuilder::connect_to_client(
         HANDSHAKE_ACTION_TIMEOUT,
         client_ip,
@@ -1071,8 +1071,8 @@ fn connection_pipeline(
 
     let statistics_thread = thread::spawn({
         let client_hostname = client_hostname.clone();
-        create_csv_file_for_statistics("gcc_statistics.csv");
-        create_csv_file_for_pending_statistics("gcc_statistics_pending.csv");
+        create_csv_file_for_statistics("nada_statistics.csv");
+        create_csv_file_for_pending_statistics("nada_statistics_pending.csv");
         move || {
             while is_streaming(&client_hostname) {
                 let data = match statics_receiver.recv(STREAMING_RECV_TIMEOUT) {
@@ -1089,11 +1089,10 @@ fn connection_pipeline(
                     let decoder_latency = client_stats.video_decode;
                     let cls = client_stats.clone();
                     let (network_latency,bitrate_mbps) = stats.report_statistics(client_stats);
-                    let mut recv_bitrate_mbps = "".to_string();
-                    if cls.recv_bitrate_report_mbps != 0.0{
-                        recv_bitrate_mbps = cls.recv_bitrate_report_mbps.to_string();
-                    }
-                    stats.report_statistics_MTP(cls, bitrate_mbps,recv_bitrate_mbps);
+                    // let mut recv_bitrate_mbps = "".to_string();
+                    // if cls.recv_bitrate_report_mbps != 0.0{
+                    //     recv_bitrate_mbps = cls.recv_bitrate_report_mbps.to_string();
+                    // }
                     let server_data_lock = SERVER_DATA_MANAGER.read();
                     BITRATE_MANAGER.lock().report_frame_latencies(
                         &server_data_lock.settings().video.bitrate.mode,

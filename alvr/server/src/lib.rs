@@ -11,9 +11,8 @@ mod sockets;
 mod statistics;
 mod tracking;
 mod web_server;
-mod gcc_delay_based_controller;
-mod gcc_config;
-mod gcc_network_controller;
+mod nada_sender_side;
+
 #[allow(
     non_camel_case_types,
     non_upper_case_globals,
@@ -40,8 +39,15 @@ use alvr_packets::{ClientListAction, DecoderInitializationConfig, VideoPacketHea
 use alvr_server_io::ServerDataManager;
 use alvr_session::{CodecType, Settings};
 use bitrate::BitrateManager;
-use gcc_delay_based_controller::BandwidthUsage;
-use gcc_network_controller::GccBandwidthEstimator;
+
+//NADA Module
+use nada_sender_side::NadaSender;
+use csv::Writer;
+use std::fs::OpenOptions;
+use csv::WriterBuilder;
+use std::{fs, io};
+use std::error::Error;
+
 use statistics::StatisticsManager;
 use std::{
     collections::HashMap,
@@ -62,6 +68,7 @@ use std::os::raw::c_float;
 pub static LIFECYCLE_STATE: RwLock<LifecycleState> = RwLock::new(LifecycleState::StartingUp);
 pub static IS_RESTARTING: RelaxedAtomic = RelaxedAtomic::new(false);
 static CONNECTION_THREAD: RwLock<Option<JoinHandle<()>>> = RwLock::new(None);
+static NADA_SENDER : Lazy<Mutex<NadaSender>> = Lazy::new(|| Mutex::new(NadaSender::new()));
 
 static FILESYSTEM_LAYOUT: Lazy<Layout> = Lazy::new(|| {
     afs::filesystem_layout_from_openvr_driver_root_dir(
@@ -78,8 +85,6 @@ static BITRATE_MANAGER: Lazy<Mutex<BitrateManager>> =
 lazy_static! {
         pub static ref EYE_GAZE_DATA: stdMutex<[f64; 4]> = stdMutex::new([1072.0, 1168.0, 3216.0, 1168.0]);
 }
-
-static GCC_BANDWIDTH_ESTIMATOR:Lazy<Mutex<GccBandwidthEstimator>> = Lazy::new(|| Mutex::new(GccBandwidthEstimator::new()));
 
 pub struct VideoPacket {
     pub header: VideoPacketHeader,

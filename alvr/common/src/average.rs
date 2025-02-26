@@ -25,6 +25,11 @@ impl<T> SlidingWindowAverage<T> {
         self.history_buffer
             .drain(0..self.history_buffer.len().saturating_sub(count));
     }
+
+    // Method to return an iterator over the history_buffer
+    pub fn get_history_iter(&self) -> std::collections::vec_deque::Iter<'_, T> {
+        self.history_buffer.iter()
+    }
 }
 
 impl SlidingWindowAverage<f32> {
@@ -36,5 +41,11 @@ impl SlidingWindowAverage<f32> {
 impl SlidingWindowAverage<Duration> {
     pub fn get_average(&self) -> Duration {
         self.history_buffer.iter().sum::<Duration>() / self.history_buffer.len() as u32
+    }
+}
+
+impl SlidingWindowAverage<i64> {
+    pub fn get_average(&self) -> i64 {
+        self.history_buffer.iter().sum::<i64>() / self.history_buffer.len() as i64
     }
 }

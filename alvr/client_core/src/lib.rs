@@ -16,6 +16,10 @@ mod storage;
 
 pub mod opengl;
 
+//NADA Client
+mod nada_receiver_side;
+use nada_receiver_side::NadaReceiver;
+
 #[cfg(target_os = "android")]
 mod audio;
 
@@ -54,6 +58,7 @@ static EVENT_QUEUE: Lazy<Mutex<VecDeque<ClientCoreEvent>>> =
     Lazy::new(|| Mutex::new(VecDeque::new()));
 
 static CONNECTION_THREAD: OptLazy<JoinHandle<()>> = alvr_common::lazy_mut_none();
+static NADA_RECEIVER : Lazy<Mutex<NadaReceiver>> = Lazy::new(|| Mutex::new(NadaReceiver::new()));
 
 #[derive(Serialize, Deserialize)]
 pub enum ClientCoreEvent {

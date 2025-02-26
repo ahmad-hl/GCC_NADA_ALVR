@@ -196,6 +196,12 @@ pub enum ClientListAction {
     SetCabled(bool),
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum RateUpdateMode {
+    AcceleratedRampUp = 0, // Corresponds to rmode = 0
+    GradualUpdate = 1,      // Corresponds to rmode = 1
+}
+
 #[derive(Serialize, Deserialize, Default, Clone)]
 pub struct ClientStatistics {
     pub target_timestamp: Duration, // identifies the frame
@@ -207,6 +213,24 @@ pub struct ClientStatistics {
     pub total_pipeline_latency: Duration,
     pub frame_arrival_timestamp:i64,
     pub recv_bitrate_report_mbps: f32,
+
+    // Added for NADA
+    pub frame_send_timestamp:i64,
+    pub shard_loss_rate:f64,
+    pub plr: f64,
+    pub is_idr:bool,
+
+    //RTCP Feedback Report: NADA Receiver--> Sender
+    pub nada_feedback:bool,
+    pub nada_xcurr:f64,
+    pub nada_rmode:i8,
+    pub nada_recv:i64,
+
+    //Only to debug NADA Receiver
+    pub t_last: i64,
+    pub d_fwd:i64,
+    pub d_queue:i64,
+    pub d_tilde:f64,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

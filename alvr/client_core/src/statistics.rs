@@ -1,10 +1,12 @@
 use alvr_common::SlidingWindowAverage;
 use alvr_packets::ClientStatistics;
+use alvr_packets::RateUpdateMode;
 use std::{
     collections::VecDeque,
     time::{Duration, Instant},
 };
 use chrono::{Utc, TimeZone};
+use crate::NADA_RECEIVER;
 
 const FULL_REPORT_INTERVAL: Duration = Duration::from_millis(1000);
 
@@ -87,6 +89,38 @@ impl StatisticsManager {
                 / 1e6
                 / interval_secs);
                 self.recv_size_sum = 0;
+            }
+
+            // Lock NADA_RECEIVER & get ref, then call functions through ref
+            {
+                let mut nada_receiver = NADA_RECEIVER.lock();
+                nada_receiver.compute_oneway_delay(frame_send_timestamp, arrival_ts);
+                nada_receiver.update_receive_loss_rate(size);
+                let is_feedback_on = nada_receiver.time_to_report_feedback(false, false);
+
+                //if there is a feedback to report
+                if is_feedback_on{
+                    //send RTCP feedback report containing values of: rmode, x_curr, and r_recv
+                    frame.client_stats.nada_feedback = true;
+                    frame.client_stats.nada_xcurr = nada_receiver.x_curr;
+                    frame.client_stats.nada_rmode = match nada_receiver.rmode {
+                        RateUpdateMode::AcceleratedRampUp => 0,
+                        RateUpdateMode::GradualUpdate => 1,
+                        _ => 1,
+                    };
+                    frame.client_stats.nada_recv = nada_receiver.r_recv;
+
+                    //To Debug NADA Receiver, report values of: t_last, d_fwd, d_tilde, d_queue, p_loss
+                    frame.client_stats.plr = nada_receiver.p_loss;
+                    frame.client_stats.d_fwd = nada_receiver.d_fwd;
+                    frame.client_stats.d_tilde = nada_receiver.d_tilde;
+                    frame.client_stats.d_queue = nada_receiver.d_queue;
+
+                    //update t_last = t_curr
+                    nada_receiver.update_t_last();
+                }else{
+                    frame.client_stats.nada_feedback = false;
+                }
             }
         }
     }
