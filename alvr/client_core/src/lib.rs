@@ -19,6 +19,10 @@ pub mod opengl;
 #[cfg(target_os = "android")]
 mod audio;
 
+//NADA Client
+mod nada_receiver_side;
+use nada_receiver_side::NadaReceiver;
+
 pub use decoder::get_frame;
 pub use logging_backend::init_logging;
 #[cfg(target_os = "android")]
@@ -54,6 +58,7 @@ static EVENT_QUEUE: Lazy<Mutex<VecDeque<ClientCoreEvent>>> =
     Lazy::new(|| Mutex::new(VecDeque::new()));
 
 static CONNECTION_THREAD: OptLazy<JoinHandle<()>> = alvr_common::lazy_mut_none();
+static NADA_RECEIVER : Lazy<Mutex<NadaReceiver>> = Lazy::new(|| Mutex::new(NadaReceiver::new()));
 
 #[derive(Serialize, Deserialize)]
 pub enum ClientCoreEvent {

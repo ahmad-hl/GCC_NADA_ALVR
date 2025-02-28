@@ -14,6 +14,8 @@ mod web_server;
 mod gcc_delay_based_controller;
 mod gcc_config;
 mod gcc_network_controller;
+mod nada_sender_side;
+
 #[allow(
     non_camel_case_types,
     non_upper_case_globals,
@@ -40,9 +42,14 @@ use alvr_packets::{ClientListAction, DecoderInitializationConfig, VideoPacketHea
 use alvr_server_io::ServerDataManager;
 use alvr_session::{CodecType, Settings};
 use bitrate::BitrateManager;
+
+//GCC Module
 use gcc_delay_based_controller::BandwidthUsage;
 use gcc_network_controller::GccBandwidthEstimator;
 use statistics::StatisticsManager;
+//NADA Module
+use nada_sender_side::NadaSender;
+
 use std::{
     collections::HashMap,
     env,
@@ -79,7 +86,10 @@ lazy_static! {
         pub static ref EYE_GAZE_DATA: stdMutex<[f64; 4]> = stdMutex::new([1072.0, 1168.0, 3216.0, 1168.0]);
 }
 
+//GCC Mutex locker
 static GCC_BANDWIDTH_ESTIMATOR:Lazy<Mutex<GccBandwidthEstimator>> = Lazy::new(|| Mutex::new(GccBandwidthEstimator::new()));
+//NADA Mutex locker
+static NADA_SENDER : Lazy<Mutex<NadaSender>> = Lazy::new(|| Mutex::new(NadaSender::new()));
 
 pub struct VideoPacket {
     pub header: VideoPacketHeader,

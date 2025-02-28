@@ -73,34 +73,41 @@ fn is_streaming(client_hostname: &str) -> bool {
         .map(|c| c.connection_state == ConnectionState::Streaming)
         .unwrap_or(false)
 }
-fn create_csv_file_for_MTP_statistics(filename: &str) -> Result<(), Box<dyn Error>> {
-    if !fs::metadata(filename).is_ok() {
-        let mut writer = WriterBuilder::new().has_headers(false).from_writer(File::create(filename)?);
-        // Write the column names in the first row
-        writer.write_record(&[
-            "target_ts_nanos",
-            "game_latency_ms",
-            "composite_latency_ms",
-            "encode_latency_ms",
-            "decode_latency_ms",
-            "network_latency_ms",
-            "decoder_queue_latency_ms",
-            "rendering_latency_ms",
-            "vsync_queue_latency_ms",
-            "total_MTP_latency_ms",
-            "enconded_frame_size_bytes",
-            "server_framerate_fps",
-            "client_framerate_fps",
-            "sending_bitrate_mbps",
-            "recving_bitrate_mbps",
-            "gcc_target_bitrate_mbps",
-            "experiment_target_timestamp",
-        ])?;
-    } else {
-        println!("File '{}' already exists, skipping creation.", filename);
-    }
-    Ok(())
+
+// Create CSV file with column names for NADA Sender statistics
+pub fn create_csv_for_nada_sender_variables(filename: &str) -> Result<(), Box<dyn Error>> {
+    let _ = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .open(filename)?;
+
+    let mut writer = WriterBuilder::new().has_headers(false).from_writer(File::create(filename)?);
+
+    writer.write_record(&[
+        "r_ref",
+        "rtt_avg_ms",
+        "r_recv_bps",
+        "rmode",
+        "x_curr",
+        "x_prev",
+        "r_vin_bps",
+        "r_send_bps",
+        "prev_r_vin_bps",
+        "prev_r_send_bps",
+        "t_curr",
+        "t_last",
+        //To debug Receiver values
+        "d_fwd",
+        "d_queue_ms",
+        "d_tilde_ms",
+        "p_loss",
+        "linux_timestamp"
+    ])?;
+
+Ok(())
 }
+
+
 fn create_csv_file_for_pending_statistics(filename: &str) -> Result<(), Box<dyn Error>> {
     if !fs::metadata(filename).is_ok() {
         let mut writer = WriterBuilder::new().has_headers(false).from_writer(File::create(filename)?);
@@ -701,20 +708,20 @@ fn connection_pipeline(
         let client_hostname = client_hostname.clone();
         move || {
             while is_streaming(&client_hostname) {
-                let VideoPacket { header, payload } =
+                let VideoPacket { mut header, payload } =
                     match video_channel_receiver.recv_timeout(STREAMING_RECV_TIMEOUT) {
                         Ok(packet) => packet,
                         Err(RecvTimeoutError::Timeout) => continue,
                         Err(RecvTimeoutError::Disconnected) => return,
                     };//get encoded video packet from video_channel_sender
-
+                let send_timestamp = Utc::now().timestamp_micros();
+                header.frame_send_timestamp = send_timestamp;
                 let mut buffer = video_sender.get_buffer(&header).unwrap();
                 // todo: make encoder write to socket buffers directly to avoid copy
                 buffer
                     .get_range_mut(0, payload.len())
                     .copy_from_slice(&payload);
 
-                let send_timestamp = Utc::now().timestamp_micros();
                 video_sender.send(buffer).ok();//tcp or udp real send out
                 if let Some(stats) = &mut *STATISTICS_MANAGER.lock() {
                     stats.report_send_timestamp(header.timestamp,send_timestamp);
@@ -1070,8 +1077,11 @@ fn connection_pipeline(
 
     let statistics_thread = thread::spawn({
         let client_hostname = client_hostname.clone();
-        create_csv_file_for_statistics("gcc_statistics.csv");
-        create_csv_file_for_pending_statistics("gcc_statistics_pending.csv");
+        let _ = create_csv_file_for_statistics("gcc_statistics.csv");
+        let _ = create_csv_file_for_pending_statistics("gcc_statistics_pending.csv");
+        let _ = create_csv_file_for_statistics("nada_statistics.csv");
+        let _ = create_csv_file_for_pending_statistics("nada_statistics_pending.csv");
+        let _ = create_csv_for_nada_sender_variables("nada_sender.csv");
         move || {
             while is_streaming(&client_hostname) {
                 let data = match statics_receiver.recv(STREAMING_RECV_TIMEOUT) {
@@ -1088,11 +1098,11 @@ fn connection_pipeline(
                     let decoder_latency = client_stats.video_decode;
                     let cls = client_stats.clone();
                     let (network_latency,bitrate_mbps) = stats.report_statistics(client_stats);
-                    let mut recv_bitrate_mbps = "".to_string();
-                    if cls.recv_bitrate_report_mbps != 0.0{
-                        recv_bitrate_mbps = cls.recv_bitrate_report_mbps.to_string();
-                    }
-                    stats.report_statistics_MTP(cls, bitrate_mbps,recv_bitrate_mbps);
+                    // let mut recv_bitrate_mbps = "".to_string();
+                    // if cls.recv_bitrate_report_mbps != 0.0{
+                    //     recv_bitrate_mbps = cls.recv_bitrate_report_mbps.to_string();
+                    // }
+                    // stats.report_statistics_MTP(cls, bitrate_mbps,recv_bitrate_mbps);
                     let server_data_lock = SERVER_DATA_MANAGER.read();
                     BITRATE_MANAGER.lock().report_frame_latencies(
                         &server_data_lock.settings().video.bitrate.mode,
@@ -1470,7 +1480,7 @@ pub extern "C" fn send_video(timestamp_ns: u64, buffer_ptr: *mut u8, len: i32, i
 
             if matches!(
                 sender.try_send(VideoPacket {
-                    header: VideoPacketHeader { timestamp, is_idr },
+                    header: VideoPacketHeader { timestamp, is_idr, frame_send_timestamp: 0},
                     payload,
                 }),
                 Err(TrySendError::Full(_))
