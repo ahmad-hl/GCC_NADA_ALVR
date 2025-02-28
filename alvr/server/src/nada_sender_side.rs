@@ -1,4 +1,4 @@
-use chrono::{Utc,Local, NaiveDateTime};
+use chrono::{Utc,Local};
 use alvr_common::*;
 use alvr_common::SlidingWindowAverage;
 use alvr_packets::RateUpdateMode;
@@ -32,7 +32,7 @@ impl NadaSender {
             r_ref: INITIAL_RATE,
             rtt_history: SlidingWindowAverage::new(
                 0,
-                15,
+                NADA_RTT_HISTORY_SIZE,
             ),
             r_recv: INITIAL_RATE, //30Mbps
             rmode: RateUpdateMode::GradualUpdate,
@@ -53,40 +53,44 @@ impl NadaSender {
         }
     }
 
-        // Function to save data to CSV
-        pub fn write_sender_values_to_csv(&self, filename: &str) -> Result<(), Box<dyn Error>> {
-            let eval_rmode = match self.rmode {
-                RateUpdateMode::AcceleratedRampUp => 0,
-                RateUpdateMode::GradualUpdate => 1,
-                _ => 2,
-            };
-            let linux_timestamp=Local::now().format("%Y%m%d%H%M%S").to_string();
-            let rtt_average = self.rtt_history.get_average() as f64/ 1000.0; // /1000 to convert us to ms
+    // Function to save data to CSV
+    pub fn write_sender_values_to_csv(&self, filename: &str) -> Result<(), Box<dyn Error>> {
+        let eval_rmode = match self.rmode {
+            RateUpdateMode::AcceleratedRampUp => 0,
+            RateUpdateMode::GradualUpdate => 1,
+            _ => 2,
+        };
+        let linux_timestamp=Local::now().format("%Y%m%d%H%M%S").to_string();
+        let rtt_average = self.rtt_history.get_average() as f64/ 1000.0; // /1000 to convert us to ms
 
-            let nada_values = [
-                self.r_ref.to_string(),
-                rtt_average.to_string(),
-                self.r_recv.to_string(),
-                eval_rmode.to_string(),
-                self.x_curr.to_string(),
-                self.x_prev.to_string(),
-                self.r_vin.to_string(),
-                self.r_send.to_string(),
-                self.prev_r_vin.to_string(),
-                self.prev_r_send.to_string(),
-                self.t_curr.to_string(),
-                self.t_last.to_string(),
-                //Only to debug Receiver values
-                self.d_fwd.to_string(),
-                (self.d_queue as f64 /1000.0).to_string(),
-                self.d_tilde.to_string(),
-                self.p_loss.to_string(),
-                linux_timestamp,
-            ];
-            // let _= write_nada_variable_values_to_csv(filename, nada_values);
-    
-            Ok(())
-        }
+        let nada_values = [
+            self.r_ref.to_string(),
+            rtt_average.to_string(),
+            self.r_recv.to_string(),
+            eval_rmode.to_string(),
+            self.x_curr.to_string(),
+            self.x_prev.to_string(),
+            self.r_vin.to_string(),
+            self.r_send.to_string(),
+            self.prev_r_vin.to_string(),
+            self.prev_r_send.to_string(),
+            self.t_curr.to_string(),
+            self.t_last.to_string(),
+            //Only to debug Receiver values
+            self.d_fwd.to_string(),
+            (self.d_queue as f64 /1000.0).to_string(),
+            self.d_tilde.to_string(),
+            self.p_loss.to_string(),
+            linux_timestamp,
+        ];
+
+        // let _= write_nada_variable_values_to_csv(filename, nada_values);
+        let file = OpenOptions::new().write(true).append(true).open(filename)?;
+        let mut writer = Writer::from_writer(file);
+        writer.write_record(&nada_values)?;
+
+        Ok(())
+    }
 
     fn update_accelerated_rampup(&mut self) -> i64{
         let rtt_average = self.rtt_history.get_average() / 1000; // /1000 to convert us to ms

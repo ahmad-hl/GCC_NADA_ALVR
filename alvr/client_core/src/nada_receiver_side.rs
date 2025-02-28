@@ -42,7 +42,7 @@ impl NadaReceiver{
             t_last: Utc::now().timestamp_micros(), 
             d_queue_history: SlidingWindowAverage::new(
                 0,
-                50,
+                15,
             ),
             x_curr: 0.0,
             rmode: RateUpdateMode::GradualUpdate,
@@ -155,17 +155,16 @@ impl NadaReceiver{
     **/
     fn determine_rate_adaptation_mode(&mut self, had_packet_loss: bool){
 
-        self.rmode = RateUpdateMode::GradualUpdate;
+        self.rmode = RateUpdateMode::AcceleratedRampUp;
         /* To operate in accelerated ramp-up mode:
         o  No recent packet losses within the observation window LOGWIN; and
-       */
-        if !had_packet_loss{
-            /*        
-            o  No build-up of queuing delay: d_fwd-d_base < QEPS for all previous
-            delay samples within the observation window LOGWIN.*/
-            if !self.exists_queuing_delay_buildup(){
-                self.rmode = RateUpdateMode::AcceleratedRampUp;
-            }
+        o  No build-up of queuing delay: d_fwd-d_base < QEPS for all previous
+        delay samples within the observation window LOGWIN.*/
+        if had_packet_loss{
+            self.rmode = RateUpdateMode::GradualUpdate;
+        }
+        if self.exists_queuing_delay_buildup(){
+            self.rmode = RateUpdateMode::GradualUpdate;
         }
     }
 

@@ -4,7 +4,7 @@ pub const NADA_PARAM_PRIO :f64 = 1.0;            //Weight of priority of the flo
  **/ 
 pub const RMCAT_CC_DEFAULT_RMIN : i64 = 2_000_000;    // 5Mbps
 pub const RMCAT_CC_DEFAULT_RMAX : i64 = 150_000_000;  //150Mbps
-pub const INITIAL_RATE : i64 = 30_000_000;  //30Mbps
+pub const INITIAL_RATE : i64 = 15_000_000;  //15Mbps
 pub const NADA_PARAM_XREF : i64 = 20;     //Reference congestion level | 20ms
 pub const NADA_PARAM_KAPPA : f64 = 0.5;       //Scaling parameter for gradual rate update | 0.5
 pub const NADA_PARAM_ETA:f64 = 2.0;           //Scaling parameter for gradual rate update | 2.0
@@ -36,6 +36,9 @@ pub const NADA_PARAM_LAMBDA :f64 = 0.5;
 pub const NADA_PARAM_MULTILOSS : f64 = 7.0;
 pub const NADA_PARAM_PLRREF : f64 = 0.01;
 pub const NADA_PARAM_XMAX : f64 = 500.0;
+
+//History Size
+pub const NADA_RTT_HISTORY_SIZE : usize = 15;
 
 
 //RTCP NADA Feedback Report, from NADA Receiver

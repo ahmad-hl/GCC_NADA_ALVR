@@ -72,49 +72,10 @@ struct BatteryData {
     gauge_value: f32,
     is_plugged: bool,
 }
-fn write_MTP_latency_to_csv(filename: &str, latency_values: [String; 17]) -> Result<(), Box<dyn Error>> {
-    let mut file = OpenOptions::new().write(true).append(true).open(filename)?;
-    let mut writer = Writer::from_writer(file);
-    // Write the latency strings in the next row
-    writer.write_record(&[
-        &latency_values[0],
-        &latency_values[1],
-        &latency_values[2],
-        &latency_values[3],
-        &latency_values[4],
-        &latency_values[5],
-        &latency_values[6],
-        &latency_values[7],
-        &latency_values[8],
-        &latency_values[9],
-        &latency_values[10],
-        &latency_values[11],
-        &latency_values[12],
-        &latency_values[13],
-        &latency_values[14],
-        &latency_values[15],
-        &latency_values[16],
-        // &latency_values[17],
-        // &latency_values[18],
-        // &latency_values[19],
-        // &latency_values[20],
-        // &latency_values[21],
-        // &latency_values[22],
-        // &latency_values[23],
-        // &latency_values[24],
-        // &latency_values[25],
-        // &latency_values[26],
-        // &latency_values[27],
-        // &latency_values[28],
-        // &latency_values[29],
-        // &latency_values[30],
-        // &latency_values[31],
-        ])?;
-        Ok(())
-}
+
 fn write_latency_to_csv(filename: &str, latency_values: [String; 19]) -> Result<(), Box<dyn Error>> {
 
-    let mut file = OpenOptions::new().write(true).append(true).open(filename)?;
+    let file = OpenOptions::new().write(true).append(true).open(filename)?;
     let mut writer = Writer::from_writer(file);
 
     // Write the latency strings in the next row
@@ -139,21 +100,14 @@ fn write_latency_to_csv(filename: &str, latency_values: [String; 19]) -> Result<
         &latency_values[16],
         &latency_values[17],
         &latency_values[18],
-
-       
-
-
-
-
-
-
     ])?;
 
     Ok(())
 }
+
 fn write_pending_stats_to_csv(filename: &str, latency_values: [String; 9]) -> Result<(), Box<dyn Error>> {
 
-    let mut file = OpenOptions::new().write(true).append(true).open(filename)?;
+    let file = OpenOptions::new().write(true).append(true).open(filename)?;
     let mut writer = Writer::from_writer(file);
 
     // Write the latency strings in the next row
@@ -190,7 +144,7 @@ pub struct StatisticsManager {
     last_vsync_time: Instant,
     frame_interval: Duration,
     last_nominal_bitrate_stats: NominalBitrateStats,
-    gcc_target_bitrate_mbps: f64,
+    target_bitrate_mbps: f64,
     video_bytes_partial_sum_pending: usize,
     last_time_bitrate_report_for_pending: Instant,
 
@@ -227,7 +181,7 @@ impl StatisticsManager {
             last_vsync_time: Instant::now(),
             frame_interval: nominal_server_frame_interval,
             last_nominal_bitrate_stats: NominalBitrateStats::default(),
-            gcc_target_bitrate_mbps: 150.,
+            target_bitrate_mbps: 15.,
             video_bytes_partial_sum_pending: 0,
             last_time_bitrate_report_for_pending: Instant::now(),
         }
@@ -341,10 +295,10 @@ impl StatisticsManager {
                     / interval_secs).to_string();
                 self.video_bytes_partial_sum_pending = 0;
             }
-            let gcc_target_bitrate_mbps=(self.gcc_target_bitrate_mbps).to_string();
+            let target_bitrate_mbps=(self.target_bitrate_mbps).to_string();
             let send_ts_ms=frame.frame_send_timestamp.to_string();
-            let experiment_target_timestamp=Local::now().format("%Y%m%d_%H%M%S").to_string();
-            let latency_strings=[target_ts_nanos,game_latency_ms,composite_latency_ms,encode_latency_ms,encoded_frame_size,bitrate_mbps,gcc_target_bitrate_mbps,send_ts_ms,experiment_target_timestamp];
+            let linux_timestamp=Local::now().format("%Y%m%d%H%M%S").to_string();
+            let latency_strings=[target_ts_nanos,game_latency_ms,composite_latency_ms,encode_latency_ms,encoded_frame_size,bitrate_mbps,target_bitrate_mbps,send_ts_ms,linux_timestamp];
             let _ = write_pending_stats_to_csv("nada_statistics_pending.csv", latency_strings);
 
         }
@@ -504,6 +458,20 @@ impl StatisticsManager {
                 actual_bitrate_bps: bitrate_bps,
             }));
 
+            
+            //Update on receiving feedback
+            if client_stats.nada_feedback{
+                let feedback_report =  NADAFeedbackReport::new(client_stats.nada_rmode, client_stats.nada_xcurr, client_stats.nada_recv,
+                    client_stats.d_fwd, client_stats.d_queue, client_stats.d_tilde, client_stats.plr);
+
+                    NADA_SENDER.lock().update_on_receive_feedback(frame.frame_send_timestamp,
+                    feedback_report, server_fps as f64);
+                self.target_bitrate_mbps = NADA_SENDER.lock().get_target_bitrate() as f64/1024./1024.;
+
+                //write nada variables to csv file (nada_sender.csv)
+                let _ =  NADA_SENDER.lock().write_sender_values_to_csv("nada_sender.csv");
+            }
+
             let target_ts_ns=(frame.target_timestamp.as_nanos()).to_string();
             let interval_trackingReceived_framePresentInVirtualDevice=(game_time_latency.as_secs_f32()*1000.).to_string();//game latency
             let interval_framePresentInVirtualDevice_frameComposited=(server_compositor_latency.as_secs_f32()*1000.).to_string();//composite latency
@@ -514,7 +482,7 @@ impl StatisticsManager {
             let client_rendering_latency=(client_stats.rendering.as_secs_f32()*1000.).to_string();
             let client_vsync_queue_latency=(client_stats.vsync_queue.as_secs_f32()*1000.).to_string();
             let interval_total_pipeline=(frame.total_pipeline_latency.as_secs_f32() * 1000.).to_string();//total pipeline latency wz repeat
-            let target_bitrate=NADA_SENDER.lock().get_target_bitrate().to_string();
+            let target_bitrate=self.target_bitrate_mbps.to_string();
             // let buffer_send_bitrate=NADA_SENDER.lock().get_sending_bitrate().to_string();
             let encoded_frame_size_bytes=frame.video_packet_bytes.to_string();//bytes for this frame
             let frame_send_ts=frame.frame_send_timestamp.to_string();
@@ -525,7 +493,7 @@ impl StatisticsManager {
             let latency_strings=[target_ts_ns,interval_trackingReceived_framePresentInVirtualDevice,interval_framePresentInVirtualDevice_frameComposited,interval_frameComposited_VideoEncoded,interval_VideoReceivedByClient_VideoDecoded,interval_network,
             client_dequeue_latency,client_rendering_latency,client_vsync_queue_latency,interval_total_pipeline,server_fps,client_fps,encoded_frame_size_bytes,target_bitrate,bitrate_mbps, client_stats.recv_bitrate_report_mbps.to_string(),frame_send_ts,
             frame_arrival_ts,linux_timestamp];
-            write_latency_to_csv("nada_statistics.csv", latency_strings);
+            let _ = write_latency_to_csv("nada_statistics.csv", latency_strings);
             (network_latency,return_bitrate_mbps)
         } else {
             (Duration::ZERO,"".to_string())
