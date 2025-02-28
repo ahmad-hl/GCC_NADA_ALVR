@@ -12,6 +12,7 @@ use std::error::Error;
 const FULL_REPORT_INTERVAL: Duration = Duration::from_millis(1000);
 use chrono::{Utc, TimeZone, Local, format::{strftime, StrftimeItems}};
 use crate::NADA_SENDER;
+use crate::GCC_BANDWIDTH_ESTIMATOR;
 
 pub struct HistoryFrame {
     target_timestamp: Duration,
@@ -73,6 +74,7 @@ struct BatteryData {
     is_plugged: bool,
 }
 
+//Write stats for NADA
 fn write_latency_to_csv(filename: &str, latency_values: [String; 19]) -> Result<(), Box<dyn Error>> {
 
     let file = OpenOptions::new().write(true).append(true).open(filename)?;
@@ -105,6 +107,25 @@ fn write_latency_to_csv(filename: &str, latency_values: [String; 19]) -> Result<
     Ok(())
 }
 
+//Write stats for GCC
+fn gcc_write_latency_to_csv(filename: &str, latency_values: [String; 6]) -> Result<(), Box<dyn Error>> {
+
+    let file = OpenOptions::new().write(true).append(true).open(filename)?;
+    let mut writer = Writer::from_writer(file);
+
+    // Write the latency strings in the next row
+    writer.write_record(&[
+        &latency_values[0],
+        &latency_values[1],
+        &latency_values[2],
+        &latency_values[3],
+        &latency_values[4],
+        &latency_values[5],
+    ])?;
+
+    Ok(())
+}
+
 fn write_pending_stats_to_csv(filename: &str, latency_values: [String; 9]) -> Result<(), Box<dyn Error>> {
 
     let file = OpenOptions::new().write(true).append(true).open(filename)?;
@@ -126,6 +147,7 @@ fn write_pending_stats_to_csv(filename: &str, latency_values: [String; 9]) -> Re
 
     Ok(())
 }
+
 pub struct StatisticsManager {
     history_buffer: VecDeque<HistoryFrame>,
     max_history_size: usize,
@@ -145,6 +167,7 @@ pub struct StatisticsManager {
     frame_interval: Duration,
     last_nominal_bitrate_stats: NominalBitrateStats,
     target_bitrate_mbps: f64,
+    gcc_target_bitrate_mbps: f64,
     video_bytes_partial_sum_pending: usize,
     last_time_bitrate_report_for_pending: Instant,
 
@@ -182,6 +205,7 @@ impl StatisticsManager {
             frame_interval: nominal_server_frame_interval,
             last_nominal_bitrate_stats: NominalBitrateStats::default(),
             target_bitrate_mbps: 15.,
+            gcc_target_bitrate_mbps: 15.,
             video_bytes_partial_sum_pending: 0,
             last_time_bitrate_report_for_pending: Instant::now(),
         }
@@ -303,6 +327,7 @@ impl StatisticsManager {
 
         }
     }
+
     pub fn report_send_timestamp(&mut self,target_timestamp: Duration, send_ts: i64)
     {
         if let Some(frame) = self
@@ -458,7 +483,8 @@ impl StatisticsManager {
                 actual_bitrate_bps: bitrate_bps,
             }));
 
-            
+
+            // **************  NADA Bandwidth Estimation **************  
             //Update on receiving feedback
             if client_stats.nada_feedback{
                 let feedback_report =  NADAFeedbackReport::new(client_stats.nada_rmode, client_stats.nada_xcurr, client_stats.nada_recv,
@@ -473,27 +499,38 @@ impl StatisticsManager {
             }
 
             let target_ts_ns=(frame.target_timestamp.as_nanos()).to_string();
-            let interval_trackingReceived_framePresentInVirtualDevice=(game_time_latency.as_secs_f32()*1000.).to_string();//game latency
-            let interval_framePresentInVirtualDevice_frameComposited=(server_compositor_latency.as_secs_f32()*1000.).to_string();//composite latency
-            let interval_frameComposited_VideoEncoded=(encoder_latency.as_secs_f32() * 1000.).to_string();//encode latency
-            let interval_VideoReceivedByClient_VideoDecoded=(client_stats.video_decode.as_secs_f32() * 1000.).to_string();//decode latency
-            let interval_network=((network_latency.as_secs_f32()*1000.).to_string());//network latency(interval_trackingsend_trackingreceived+interval_encodedVideoSend_encodedVideoReceived)
+            let interval_trackingReceived_framePresentInVirtualDevice=(game_time_latency.as_secs_f32()*1000.).to_string(); //game latency
+            let interval_framePresentInVirtualDevice_frameComposited=(server_compositor_latency.as_secs_f32()*1000.).to_string(); //composite latency
+            let interval_frameComposited_VideoEncoded=(encoder_latency.as_secs_f32() * 1000.).to_string(); //encode latency
+            let interval_VideoReceivedByClient_VideoDecoded=(client_stats.video_decode.as_secs_f32() * 1000.).to_string(); //decode latency
+            let interval_network=((network_latency.as_secs_f32()*1000.).to_string()); //network latency(interval_trackingsend_trackingreceived+interval_encodedVideoSend_encodedVideoReceived)
             let client_dequeue_latency=(client_stats.video_decoder_queue.as_secs_f32()*1000.).to_string();
             let client_rendering_latency=(client_stats.rendering.as_secs_f32()*1000.).to_string();
             let client_vsync_queue_latency=(client_stats.vsync_queue.as_secs_f32()*1000.).to_string();
-            let interval_total_pipeline=(frame.total_pipeline_latency.as_secs_f32() * 1000.).to_string();//total pipeline latency wz repeat
+            let interval_total_pipeline=(frame.total_pipeline_latency.as_secs_f32() * 1000.).to_string(); //total pipeline latency wz repeat
             let target_bitrate=self.target_bitrate_mbps.to_string();
-            // let buffer_send_bitrate=NADA_SENDER.lock().get_sending_bitrate().to_string();
             let encoded_frame_size_bytes=frame.video_packet_bytes.to_string();//bytes for this frame
             let frame_send_ts=frame.frame_send_timestamp.to_string();
             let frame_arrival_ts=client_stats.frame_arrival_timestamp.to_string();
             let server_fps=server_fps.to_string();
             let client_fps=client_fps.to_string();
-            let linux_timestamp=Local::now().format("%Y%m%d%H%M%S").to_string();
-            let latency_strings=[target_ts_ns,interval_trackingReceived_framePresentInVirtualDevice,interval_framePresentInVirtualDevice_frameComposited,interval_frameComposited_VideoEncoded,interval_VideoReceivedByClient_VideoDecoded,interval_network,
-            client_dequeue_latency,client_rendering_latency,client_vsync_queue_latency,interval_total_pipeline,server_fps,client_fps,encoded_frame_size_bytes,target_bitrate,bitrate_mbps, client_stats.recv_bitrate_report_mbps.to_string(),frame_send_ts,
-            frame_arrival_ts,linux_timestamp];
-            let _ = write_latency_to_csv("nada_statistics.csv", latency_strings);
+            let linux_timestamp=Local::now().format("%Y%m%d%H%M%S");
+            let nada_latency_strings=[target_ts_ns, interval_trackingReceived_framePresentInVirtualDevice, interval_framePresentInVirtualDevice_frameComposited, interval_frameComposited_VideoEncoded, interval_VideoReceivedByClient_VideoDecoded, interval_network,
+            client_dequeue_latency, client_rendering_latency, client_vsync_queue_latency, interval_total_pipeline, server_fps, client_fps, encoded_frame_size_bytes, target_bitrate, bitrate_mbps, client_stats.recv_bitrate_report_mbps.to_string(),frame_send_ts,
+            frame_arrival_ts,linux_timestamp.to_string()];
+            let _ = write_latency_to_csv("nada_statistics.csv", nada_latency_strings);
+
+            // ************** GCC Bandwidth Estimation **************
+            let gcc_target_bitrate_bps = GCC_BANDWIDTH_ESTIMATOR.lock().Update(frame.frame_send_timestamp as f64, client_stats.frame_arrival_timestamp as f64, frame.video_packet_bytes as i64);
+            let link_capacity_mbps = GCC_BANDWIDTH_ESTIMATOR.lock().get_estimated_througput();
+            self.gcc_target_bitrate_mbps = gcc_target_bitrate_bps/1024./1024.;
+            let gcc_target_ts_ns=(frame.target_timestamp.as_nanos().clone()).to_string();
+            let gcc_frame_send_ts=frame.frame_send_timestamp.to_string();
+            let gcc_frame_arrival_ts=client_stats.frame_arrival_timestamp.to_string();
+            let gcc_linux_timestamp=linux_timestamp.to_string();
+            let gcc_latency_strings=[gcc_target_ts_ns, self.gcc_target_bitrate_mbps.to_string(), link_capacity_mbps.to_string(), gcc_frame_send_ts, gcc_frame_arrival_ts, gcc_linux_timestamp];            
+            let _ = gcc_write_latency_to_csv("gcc_statistics.csv", gcc_latency_strings);
+            
             (network_latency,return_bitrate_mbps)
         } else {
             (Duration::ZERO,"".to_string())

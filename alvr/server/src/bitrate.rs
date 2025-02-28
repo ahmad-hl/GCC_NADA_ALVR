@@ -9,6 +9,7 @@ use std::{
     time::{Duration, Instant},
 };
 use crate::GCC_BANDWIDTH_ESTIMATOR;
+use crate::NADA_SENDER;
 const UPDATE_INTERVAL: Duration = Duration::from_secs(1);
 
 pub struct BitrateManager {
@@ -256,7 +257,7 @@ impl BitrateManager {
         // } else {
         //     self.nominal_frame_interval
         // };
-        let bitrate_bps = GCC_BANDWIDTH_ESTIMATOR.lock().get_target_bitrate_bps();
+        let bitrate_bps = NADA_SENDER.lock().get_target_bitrate();
         (
             FfiDynamicEncoderParams {
                 updated: 1,
