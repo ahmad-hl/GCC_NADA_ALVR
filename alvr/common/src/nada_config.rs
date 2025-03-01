@@ -48,7 +48,6 @@ pub struct NADAFeedbackReport{
     pub r_recv:i64,
     
     //Only For Debuging NADA Receiver
-    pub d_fwd:i64,
     pub d_queue:i64,
     pub d_tilde:f64,
     pub p_loss: f64,
@@ -56,15 +55,13 @@ pub struct NADAFeedbackReport{
 
 impl NADAFeedbackReport {
 pub fn new(
-    rmode:i8, x_curr:f64, r_recv:i64, d_fwd:i64, 
-    d_queue:i64, d_tilde:f64, p_loss: f64) -> Self {
+    rmode:i8, x_curr:f64, r_recv:i64, d_queue:i64, d_tilde:f64, p_loss: f64) -> Self {
     Self {
         rmode:rmode,
         x_curr:x_curr,
         r_recv:r_recv, 
 
         //Only For Debuging NADA Receiver
-        d_fwd:d_fwd,
         d_queue:d_queue,
         d_tilde: d_tilde,
         p_loss: p_loss,

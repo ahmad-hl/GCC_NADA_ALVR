@@ -95,7 +95,6 @@ pub fn create_csv_for_nada_sender_variables(filename: &str) -> Result<(), Box<dy
         "t_curr",
         "t_last",
         //To debug Receiver values
-        "d_fwd",
         "d_queue_ms",
         "d_tilde_ms",
         "p_loss",

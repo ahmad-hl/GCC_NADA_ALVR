@@ -228,7 +228,6 @@ pub struct ClientStatistics {
 
     //Only to debug NADA Receiver
     pub t_last: i64,
-    pub d_fwd:i64,
     pub d_queue:i64,
     pub d_tilde:f64,
 }

@@ -487,8 +487,7 @@ impl StatisticsManager {
             // **************  NADA Bandwidth Estimation **************  
             //Update on receiving feedback
             if client_stats.nada_feedback{
-                let feedback_report =  NADAFeedbackReport::new(client_stats.nada_rmode, client_stats.nada_xcurr, client_stats.nada_recv,
-                    client_stats.d_fwd, client_stats.d_queue, client_stats.d_tilde, client_stats.plr);
+                let feedback_report =  NADAFeedbackReport::new(client_stats.nada_rmode, client_stats.nada_xcurr, client_stats.nada_recv, client_stats.d_queue, client_stats.d_tilde, client_stats.plr);
 
                     NADA_SENDER.lock().update_on_receive_feedback(frame.frame_send_timestamp,
                     feedback_report, server_fps as f64);
