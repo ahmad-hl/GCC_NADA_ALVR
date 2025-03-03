@@ -70,49 +70,10 @@ struct BatteryData {
     gauge_value: f32,
     is_plugged: bool,
 }
-fn write_MTP_latency_to_csv(filename: &str, latency_values: [String; 17]) -> Result<(), Box<dyn Error>> {
-    let mut file = OpenOptions::new().write(true).append(true).open(filename)?;
-    let mut writer = Writer::from_writer(file);
-    // Write the latency strings in the next row
-    writer.write_record(&[
-        &latency_values[0],
-        &latency_values[1],
-        &latency_values[2],
-        &latency_values[3],
-        &latency_values[4],
-        &latency_values[5],
-        &latency_values[6],
-        &latency_values[7],
-        &latency_values[8],
-        &latency_values[9],
-        &latency_values[10],
-        &latency_values[11],
-        &latency_values[12],
-        &latency_values[13],
-        &latency_values[14],
-        &latency_values[15],
-        &latency_values[16],
-        // &latency_values[17],
-        // &latency_values[18],
-        // &latency_values[19],
-        // &latency_values[20],
-        // &latency_values[21],
-        // &latency_values[22],
-        // &latency_values[23],
-        // &latency_values[24],
-        // &latency_values[25],
-        // &latency_values[26],
-        // &latency_values[27],
-        // &latency_values[28],
-        // &latency_values[29],
-        // &latency_values[30],
-        // &latency_values[31],
-        ])?;
-        Ok(())
-}
+
 fn write_latency_to_csv(filename: &str, latency_values: [String; 19]) -> Result<(), Box<dyn Error>> {
 
-    let mut file = OpenOptions::new().write(true).append(true).open(filename)?;
+    let file = OpenOptions::new().write(true).append(true).open(filename)?;
     let mut writer = Writer::from_writer(file);
 
     // Write the latency strings in the next row
@@ -138,20 +99,13 @@ fn write_latency_to_csv(filename: &str, latency_values: [String; 19]) -> Result<
         &latency_values[17],
         &latency_values[18],
 
-       
-
-
-
-
-
-
     ])?;
 
     Ok(())
 }
 fn write_pending_stats_to_csv(filename: &str, latency_values: [String; 9]) -> Result<(), Box<dyn Error>> {
 
-    let mut file = OpenOptions::new().write(true).append(true).open(filename)?;
+    let file = OpenOptions::new().write(true).append(true).open(filename)?;
     let mut writer = Writer::from_writer(file);
 
     // Write the latency strings in the next row
@@ -515,7 +469,6 @@ impl StatisticsManager {
             let client_rendering_latency=(client_stats.rendering.as_secs_f32()*1000.).to_string();
             let client_vsync_queue_latency=(client_stats.vsync_queue.as_secs_f32()*1000.).to_string();
             let interval_total_pipeline=(frame.total_pipeline_latency.as_secs_f32() * 1000.).to_string();//total pipeline latency wz repeat
-            let bitrate_statistics=GCC_BANDWIDTH_ESTIMATOR.lock().get_estimated_througput().to_string();//bitrate_bps.to_string();//bitrate bps
             let total_size_for_this_encoded_frame_bytes=frame.video_packet_bytes.to_string();//bytes for this frame
             let frame_send_ts=frame.frame_send_timestamp.to_string();
             let frame_arrival_ts=client_stats.frame_arrival_timestamp.to_string();
@@ -523,8 +476,6 @@ impl StatisticsManager {
             let client_fps=client_fps.to_string();
             let gcc_target_bitrate_mbps_string = (gcc_target_bitrate_bps/1e6).to_string();
             let experiment_target_timestamp=Local::now().format("%Y%m%d%H%M%S").to_string();
-            //let mut tracking_received_time=frame.tracking_received.saturating_duration_since(Instant::)
-            let statistics_recv_ts = Utc::now().timestamp_millis().to_string();
             let latency_strings=[timestamp_for_this_frame,interval_trackingReceived_framePresentInVirtualDevice,interval_framePresentInVirtualDevice_frameComposited,interval_frameComposited_VideoEncoded,interval_VideoReceivedByClient_VideoDecoded,interval_network,
             client_dequeue_latency,client_rendering_latency,client_vsync_queue_latency,interval_total_pipeline,server_fps,client_fps,total_size_for_this_encoded_frame_bytes,gcc_target_bitrate_mbps_string,bitrate_mbps, client_stats.recv_bitrate_report_mbps.to_string(),frame_send_ts,
             frame_arrival_ts,experiment_target_timestamp];
