@@ -73,34 +73,7 @@ fn is_streaming(client_hostname: &str) -> bool {
         .map(|c| c.connection_state == ConnectionState::Streaming)
         .unwrap_or(false)
 }
-fn create_csv_file_for_MTP_statistics(filename: &str) -> Result<(), Box<dyn Error>> {
-    if !fs::metadata(filename).is_ok() {
-        let mut writer = WriterBuilder::new().has_headers(false).from_writer(File::create(filename)?);
-        // Write the column names in the first row
-        writer.write_record(&[
-            "target_ts_nanos",
-            "game_latency_ms",
-            "composite_latency_ms",
-            "encode_latency_ms",
-            "decode_latency_ms",
-            "network_latency_ms",
-            "decoder_queue_latency_ms",
-            "rendering_latency_ms",
-            "vsync_queue_latency_ms",
-            "total_MTP_latency_ms",
-            "enconded_frame_size_bytes",
-            "server_framerate_fps",
-            "client_framerate_fps",
-            "sending_bitrate_mbps",
-            "recving_bitrate_mbps",
-            "gcc_target_bitrate_mbps",
-            "experiment_target_timestamp",
-        ])?;
-    } else {
-        println!("File '{}' already exists, skipping creation.", filename);
-    }
-    Ok(())
-}
+
 fn create_csv_file_for_pending_statistics(filename: &str) -> Result<(), Box<dyn Error>> {
     if !fs::metadata(filename).is_ok() {
         let mut writer = WriterBuilder::new().has_headers(false).from_writer(File::create(filename)?);
@@ -829,8 +802,8 @@ fn connection_pipeline(
     let tracking_receive_thread = thread::spawn({
         let tracking_manager = Arc::clone(&tracking_manager);
         let hand_gesture_manager = Arc::clone(&hand_gesture_manager);
-        create_csv_file("eyegaze.csv");
-        create_csv_file_tracking("tracking.csv");
+        // create_csv_file("eyegaze.csv");
+        // create_csv_file_tracking("tracking.csv");
         let mut gestures_button_mapping_manager =
             settings.headset.controllers.as_option().map(|config| {
                 ButtonMappingManager::new_automatic(
@@ -978,7 +951,7 @@ fn connection_pipeline(
                         right_view_quat_array[0].to_string(),right_view_quat_array[1].to_string(),right_view_quat_array[2].to_string(),right_view_quat_array[3].to_string(),//right eye view orientation
                         right_view_position_array[0].to_string(),right_view_position_array[1].to_string(),right_view_position_array[2].to_string(),//right eye view position
                         tracking.right_view_fov.up.to_string(),tracking.right_view_fov.down.to_string(),tracking.right_view_fov.left.to_string(),tracking.right_view_fov.right.to_string(),left_yaw.to_string(),left_pitch.to_string(),left_frame_x.to_string(),left_frame_y.to_string(),right_frame_x.to_string(),right_frame_y.to_string()];//right eye fov
-                        write_latency_to_csv("eyegaze.csv", eye_data);
+                        // write_latency_to_csv("eyegaze.csv", eye_data);
                         
                     }
 
@@ -1070,8 +1043,8 @@ fn connection_pipeline(
 
     let statistics_thread = thread::spawn({
         let client_hostname = client_hostname.clone();
-        create_csv_file_for_statistics("gcc_statistics.csv");
-        create_csv_file_for_pending_statistics("gcc_statistics_pending.csv");
+        let _ = create_csv_file_for_statistics("gcc_statistics.csv");
+        let _ = create_csv_file_for_pending_statistics("gcc_statistics_pending.csv");
         move || {
             while is_streaming(&client_hostname) {
                 let data = match statics_receiver.recv(STREAMING_RECV_TIMEOUT) {
@@ -1092,7 +1065,7 @@ fn connection_pipeline(
                     if cls.recv_bitrate_report_mbps != 0.0{
                         recv_bitrate_mbps = cls.recv_bitrate_report_mbps.to_string();
                     }
-                    stats.report_statistics_MTP(cls, bitrate_mbps,recv_bitrate_mbps);
+                    // stats.report_statistics_MTP(cls, bitrate_mbps,recv_bitrate_mbps);
                     let server_data_lock = SERVER_DATA_MANAGER.read();
                     BITRATE_MANAGER.lock().report_frame_latencies(
                         &server_data_lock.settings().video.bitrate.mode,
