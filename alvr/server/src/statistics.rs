@@ -341,9 +341,9 @@ impl StatisticsManager {
             }
             let gcc_target_bitrate_mbps=(self.gcc_target_bitrate_mbps).to_string();
             let send_ts_ms=frame.frame_send_timestamp.to_string();
-            let experiment_target_timestamp=Local::now().format("%Y%m%d_%H%M%S").to_string();
+            let experiment_target_timestamp=Local::now().format("%Y%m%d%H%M%S").to_string();
             let latency_strings=[target_ts_nanos,game_latency_ms,composite_latency_ms,encode_latency_ms,encoded_frame_size,bitrate_mbps,gcc_target_bitrate_mbps,send_ts_ms,experiment_target_timestamp];
-            write_pending_stats_to_csv("alvr_statistics_pending.csv", latency_strings);
+            let _ = write_pending_stats_to_csv("alvr_statistics_pending.csv", latency_strings);
 
         }
     }
@@ -373,65 +373,7 @@ impl StatisticsManager {
     pub fn report_nominal_bitrate_stats(&mut self, stats: NominalBitrateStats) {
         self.last_nominal_bitrate_stats = stats;
     }
-    pub fn report_statistics_MTP(&mut self, client_stats: ClientStatistics,bitrate_mbps: String,recv_bitrate_mbps:String) {
-        if let Some(frame) = self
-            .history_buffer
-            .iter_mut()
-            .find(|frame| frame.target_timestamp == client_stats.target_timestamp){
-                if frame.MTP_reported {
-                    return;
-                }
-                frame.total_pipeline_latency_MTP = client_stats.total_pipeline_latency;
-                let mut game_time_latency = frame
-                    .frame_present_MTP
-                    .saturating_duration_since(frame.tracking_received);
-    
-                let server_compositor_latency = frame
-                    .frame_composed_MTP
-                    .saturating_duration_since(frame.frame_present_MTP);
-    
-                let encoder_latency = frame
-                    .frame_encoded_MTP
-                    .saturating_duration_since(frame.frame_composed_MTP);
-                let network_latency = frame.total_pipeline_latency_MTP.saturating_sub(
-                    game_time_latency
-                        + server_compositor_latency
-                        + encoder_latency
-                        + client_stats.video_decode
-                        + client_stats.video_decoder_queue
-                        + client_stats.rendering
-                        + client_stats.vsync_queue,
-                );
-                let client_fps = 1.0
-                / client_stats
-                    .frame_interval
-                    .max(Duration::from_millis(1))
-                    .as_secs_f32();
-                 let server_fps = 1.0
-                / self
-                    .last_frame_present_interval
-                    .max(Duration::from_millis(1))
-                    .as_secs_f32();
-                let mut bitrate_mbps = bitrate_mbps;
-                let mut timestamp_for_this_frame=(frame.target_timestamp.as_nanos()).to_string();
-                let mut interval_trackingReceived_framePresentInVirtualDevice=(game_time_latency.as_secs_f32()*1000.).to_string();//game latency
-                let mut interval_framePresentInVirtualDevice_frameComposited=(server_compositor_latency.as_secs_f32()*1000.).to_string();//composite latency
-                let mut interval_frameComposited_VideoEncoded=(encoder_latency.as_secs_f32() * 1000.).to_string();//encode latency
-                let mut interval_VideoReceivedByClient_VideoDecoded=(client_stats.video_decode.as_secs_f32() * 1000.).to_string();//decode latency
-                let mut interval_network=((network_latency.as_secs_f32()*1000.).to_string());//network latency(interval_trackingsend_trackingreceived+interval_encodedVideoSend_encodedVideoReceived)
-                let mut client_dequeue_latency=(client_stats.video_decoder_queue.as_secs_f32()*1000.).to_string();
-                let mut client_rendering_latency=(client_stats.rendering.as_secs_f32()*1000.).to_string();
-                let mut client_vsync_queue_latency=(client_stats.vsync_queue.as_secs_f32()*1000.).to_string();
-                let mut interval_total_pipeline=(frame.total_pipeline_latency_MTP.as_secs_f32() * 1000.).to_string();//total pipeline latency wz repeat
-                let encoded_frame_size = frame.video_packet_bytes_MTP.to_string();
-                let experiment_target_timestamp=Local::now().format("%Y%m%d_%H%M%S").to_string();
-                //let controller_string = controller;
-                let latency_strings=[timestamp_for_this_frame,interval_trackingReceived_framePresentInVirtualDevice,interval_framePresentInVirtualDevice_frameComposited,interval_frameComposited_VideoEncoded,interval_VideoReceivedByClient_VideoDecoded,interval_network,
-            client_dequeue_latency,client_rendering_latency,client_vsync_queue_latency,interval_total_pipeline,encoded_frame_size,server_fps.to_string(),client_fps.to_string(),bitrate_mbps,recv_bitrate_mbps,self.gcc_target_bitrate_mbps.to_string(),experiment_target_timestamp];
-                write_MTP_latency_to_csv("statistics_mtp.csv", latency_strings);
-                frame.MTP_reported = true;
-        }
-    }
+
     // Called every frame. Some statistics are reported once every frame
     // Returns network latency
     pub fn report_statistics(&mut self, client_stats: ClientStatistics) -> (Duration,String) {
@@ -580,13 +522,13 @@ impl StatisticsManager {
             let server_fps=server_fps.to_string();
             let client_fps=client_fps.to_string();
             let gcc_target_bitrate_mbps_string = (gcc_target_bitrate_bps/1e6).to_string();
-            let experiment_target_timestamp=Local::now().format("%Y%m%d_%H%M%S").to_string();
+            let experiment_target_timestamp=Local::now().format("%Y%m%d%H%M%S").to_string();
             //let mut tracking_received_time=frame.tracking_received.saturating_duration_since(Instant::)
             let statistics_recv_ts = Utc::now().timestamp_millis().to_string();
             let latency_strings=[timestamp_for_this_frame,interval_trackingReceived_framePresentInVirtualDevice,interval_framePresentInVirtualDevice_frameComposited,interval_frameComposited_VideoEncoded,interval_VideoReceivedByClient_VideoDecoded,interval_network,
             client_dequeue_latency,client_rendering_latency,client_vsync_queue_latency,interval_total_pipeline,server_fps,client_fps,total_size_for_this_encoded_frame_bytes,gcc_target_bitrate_mbps_string,bitrate_mbps, client_stats.recv_bitrate_report_mbps.to_string(),frame_send_ts,
             frame_arrival_ts,experiment_target_timestamp];
-            write_latency_to_csv("alvr_statistics.csv", latency_strings);
+            let _ = write_latency_to_csv("alvr_statistics.csv", latency_strings);
             (network_latency,return_bitrate_mbps)
         } else {
             (Duration::ZERO,"".to_string())
