@@ -10,30 +10,23 @@ use csv::Writer;
 use std::fs::OpenOptions;
 use std::error::Error;
 const FULL_REPORT_INTERVAL: Duration = Duration::from_millis(1000);
-use chrono::{Utc, TimeZone, Local, format::{strftime, StrftimeItems}};
+use chrono::{Utc, Local};
 use crate::NADA_SENDER;
 
 pub struct HistoryFrame {
     target_timestamp: Duration,
     tracking_received: Instant,
     frame_present: Instant,
-    frame_present_MTP: Instant,
     frame_composed: Instant,
-    frame_composed_MTP: Instant,
     frame_encoded: Instant,
-    frame_encoded_MTP: Instant,
     video_packet_bytes: usize,
-    video_packet_bytes_MTP: usize,
     total_pipeline_latency: Duration,
-    total_pipeline_latency_MTP: Duration,
     reported:bool,//wz repeat
     last_repeat_game_latency:Duration,//wz repeat
     frame_send_timestamp:i64,
     encode_times: i32,
     composition_times: i32,
-    tracking_rece_times: i32,
     frame_present_times: i32,
-    MTP_reported: bool
     
 }
 
@@ -44,25 +37,16 @@ impl Default for HistoryFrame {
             target_timestamp: Duration::ZERO,
             tracking_received: now,
             frame_present: now,
-            frame_present_MTP: now,
             frame_composed: now,
-            frame_composed_MTP: now,
             frame_encoded: now,
-            frame_encoded_MTP: now,
             video_packet_bytes: 0,//total size for this encoded frame
-            video_packet_bytes_MTP: 0,
             total_pipeline_latency: Duration::ZERO,
-            total_pipeline_latency_MTP: Duration::ZERO,
             reported: false,//wz repeat
             last_repeat_game_latency: Duration::ZERO,//wz repeat
             frame_send_timestamp:Utc::now().timestamp_micros(),
             encode_times: 0,
             composition_times: 0,
-            tracking_rece_times: 0,
             frame_present_times: 0,
-            MTP_reported: false,
-
-            
         }
     }
 }
@@ -211,10 +195,6 @@ impl StatisticsManager {
             .iter_mut()
             .find(|frame| frame.target_timestamp == target_timestamp)
         {
-            if frame.frame_present_times == 0 {
-                let now = Instant::now() - offset;
-                frame.frame_present_MTP = now;
-            }
             let now = Instant::now() - offset;
 
             self.last_frame_present_interval =
@@ -232,9 +212,6 @@ impl StatisticsManager {
             .iter_mut()
             .find(|frame| frame.target_timestamp == target_timestamp)
         {
-            if frame.composition_times == 0{
-                frame.frame_composed_MTP = Instant::now() - offset;
-            }
             frame.frame_composed = Instant::now() - offset;
             frame.composition_times +=1;
         }
@@ -257,11 +234,6 @@ impl StatisticsManager {
             .iter_mut()
             .find(|frame| frame.target_timestamp == target_timestamp)
         {
-            if frame.encode_times == 0{
-                frame.frame_encoded_MTP = Instant::now();
-                frame.video_packet_bytes_MTP = bytes_count;
-                let _ = frame.frame_encoded_MTP.saturating_duration_since(frame.frame_composed_MTP);
-            }
             frame.frame_encoded = Instant::now();
 
             frame.video_packet_bytes = bytes_count;
@@ -461,8 +433,7 @@ impl StatisticsManager {
             
             //Update on receiving feedback
             if client_stats.nada_feedback{
-                let feedback_report =  NADAFeedbackReport::new(client_stats.nada_rmode, client_stats.nada_xcurr, client_stats.nada_recv,
-                    client_stats.d_fwd, client_stats.d_queue, client_stats.d_tilde, client_stats.plr);
+                let feedback_report =  NADAFeedbackReport::new(client_stats.nada_rmode, client_stats.nada_xcurr, client_stats.nada_recv, client_stats.d_queue, client_stats.d_tilde, client_stats.plr);
 
                     NADA_SENDER.lock().update_on_receive_feedback(frame.frame_send_timestamp,
                     feedback_report, server_fps as f64);

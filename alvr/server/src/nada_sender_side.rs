@@ -21,7 +21,6 @@ pub struct NadaSender{
     pub t_curr:i64,
 
     //Only for Debugging the NADA Receiver
-    pub d_fwd:i64, //Measured and filtered one-way delay  
     pub d_queue:i64, //Estimated queueing delay     
     pub d_tilde:f64, //Equivalent delay after non-linear warping
     pub p_loss: f64, //Estimated packet loss ratio
@@ -46,7 +45,6 @@ impl NadaSender {
             t_curr: Utc::now().timestamp_micros(), 
 
             //Only for Debugging the NADA Receiver
-            d_fwd: 0,
             d_queue: 0,
             d_tilde: 0.0,
             p_loss: 0.0,
@@ -77,7 +75,6 @@ impl NadaSender {
             self.t_curr.to_string(),
             self.t_last.to_string(),
             //Only to debug Receiver values
-            self.d_fwd.to_string(),
             (self.d_queue as f64 /1000.0).to_string(),
             self.d_tilde.to_string(),
             self.p_loss.to_string(),
@@ -145,7 +142,6 @@ impl NadaSender {
         self.r_recv = feedback_report.r_recv;
 
         //Only To Debug NADA Receiver
-        self.d_fwd = feedback_report.d_fwd;
         self.d_queue = feedback_report.d_queue;
         self.d_tilde = feedback_report.d_tilde;
 

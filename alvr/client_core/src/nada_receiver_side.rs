@@ -7,7 +7,6 @@ use std::time::{Duration, Instant};
 
 pub struct NadaReceiver{
     pub d_base : i64, //Estimated baseline delay 
-    pub d_fwd: i64, //Measured and filtered one-way delay 
     pub d_tilde: f64, //Equivalent delay after non-linear warping 
     pub d_queue: i64, //Estimated queueing delay  
     pub p_loss : f64, //Estimated packet loss ratio 
@@ -33,7 +32,6 @@ impl NadaReceiver{
     pub fn new() -> Self {
         Self { 
             d_base: i64::MAX, 
-            d_fwd: 0,
             d_tilde: 0.0,
             d_queue: 0,
             p_loss: 0.0, 
@@ -65,14 +63,9 @@ impl NadaReceiver{
         update queuing delay:  d_queue = d_fwd - d_base
      *****/
     pub fn compute_oneway_delay(&mut self, frame_send_timestamp: i64, frame_arrival_timestamp: i64){
-        if self.last_t_send != 0{
-            self.d_fwd = (frame_arrival_timestamp - self.last_t_arrival) - (frame_send_timestamp - self.last_t_send);
-        }
-        else{
-            self.d_fwd = 0;
-        }
-        self.d_base = std::cmp::min(self.d_base, self.d_fwd);
-        self.d_queue = self.d_fwd -  self.d_base;
+        let d_fwd = frame_arrival_timestamp - frame_send_timestamp;
+        self.d_base = std::cmp::min(self.d_base, d_fwd);
+        self.d_queue = d_fwd -  self.d_base;
         self.d_queue_history.submit_sample(self.d_queue);
 
         //initialize last timestamps
