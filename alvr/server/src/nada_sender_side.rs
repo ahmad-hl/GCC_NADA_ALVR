@@ -188,8 +188,9 @@ impl NadaSender {
             buffer_len
         };
 
-        let result = self.r_ref as f64 - NADA_PARAM_BETA_V  * 8.0 * buffer_len_ * video_fps;
-        self.r_vin  = result.round() as i64
+        // r_diff_v = min(0.05 * r_ref, BETA_V * 8 * buffer_len * FPS)
+        let r_diff_v = f64::min(self.r_ref as f64 * 0.05, NADA_PARAM_BETA_V * 8.0 * buffer_len_ * video_fps);
+        self.r_vin  = i64::max(RMCAT_CC_DEFAULT_RMIN, (self.r_ref as f64 - r_diff_v).round() as i64);
     }
 
     fn update_sending_bitrate(&mut self, buffer_len:f64, video_fps: f64){
@@ -200,8 +201,9 @@ impl NadaSender {
             buffer_len
         };
 
-        let result = self.r_ref  as f64 - NADA_PARAM_BETA_S * 8.0 * buffer_len_ * video_fps;
-        self.r_send = result.round() as i64
+        // r_diff_s = min(0.05 * r_ref, BETA_S * 8 * buffer_len * FPS)
+        let r_diff_s = f64::min(self.r_ref as f64 * 0.05, NADA_PARAM_BETA_S * 8.0 * buffer_len_ * video_fps);
+        self.r_send =   i64::min(RMCAT_CC_DEFAULT_RMAX, (self.r_ref as f64 +  r_diff_s).round() as i64);
     }
 
     pub fn get_target_bitrate(&mut self) -> i64{
