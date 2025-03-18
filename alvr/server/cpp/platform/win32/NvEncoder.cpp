@@ -949,7 +949,7 @@ void NvEncoder::EndEncode(std::vector<std::vector<uint8_t>> &vPacket)
     SendEOS();
     uint64_t targetTimestampNs = 0;
 
-    GetEncodedPacket(m_vBitstreamOutputBuffer, vPacket, false, targetTimestampNs, false, 0, false);
+    GetEncodedPacket(m_vBitstreamOutputBuffer, vPacket, false, targetTimestampNs, true, 0, false);
     // e_buf.close();
 }
 
