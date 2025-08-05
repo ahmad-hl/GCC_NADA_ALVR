@@ -1,88 +1,29 @@
-<p align="center"> <img width="500" src="resources/alvr_combined_logo_hq.png"/> </p>
-
-# ALVR - Air Light VR
-
-[![badge-discord][]][link-discord] [![badge-matrix][]][link-matrix] [![badge-opencollective][]][link-opencollective]
-
-Stream VR games from your PC to your headset via Wi-Fi.  
-ALVR uses technologies like [Asynchronous Timewarp](https://developer.oculus.com/documentation/native/android/mobile-timewarp-overview) and [Fixed Foveated Rendering](https://developer.oculus.com/documentation/native/android/mobile-ffr) for a smoother experience.  
-Most of the games that run on SteamVR or Oculus Software (using Revive) should work with ALVR.  
-This is a fork of [ALVR](https://github.com/polygraphene/ALVR).
-
-|      VR Headset       |                                Support                                 |
-| :-------------------: | :--------------------------------------------------------------------: |
-|    Quest 1/2/3/Pro    |                           :heavy_check_mark:                           |
-|     Pico 4/Neo 3      |                           :heavy_check_mark:                           |
-| Vive Focus 3/XR Elite |                           :heavy_check_mark:                           |
-|        YVR 1/2        |                           :heavy_check_mark:                           |
-|        Lynx R1        |                           :heavy_check_mark:                           |
-|   Smartphone/Monado   |                              :warning: *                               |
-|   Google Cardboard    | :warning: * ([PhoneVR](https://github.com/PhoneVR-Developers/PhoneVR)) |
-|        GearVR         |                         :construction: (maybe)                         |
-|       Oculus Go       |                                 :x: **                                 |
-
-\* : Only works on some smartphones, not enough testing.  
-\** : Oculus Go support was dropped, the minimum supported OS is Android 8. Download the last compatible version [here](https://github.com/alvr-org/ALVR/releases/tag/v18.2.3).
-
-|        PC OS        |       Support       |
-| :-----------------: | :-----------------: |
-|   Windows 8/10/11   | :heavy_check_mark:  |
-|    Windows 7/XP     |         :x:         |
-|     Ubuntu/Arch     |    :warning: ***    |
-| Other linux distros | :grey_question: *** |
-|        macOS        |         :x:         |
-
-\*** : Linux support is still in beta. To be able to make audio work or run ALVR at all you may need advanced knowledge of your distro for debugging or building from source.
-
-## Requirements
-
--   A supported standalone VR headset (see compatibility table above)
-
--   SteamVR
-
--   High-end gaming PC
-    -   See OS compatibility table above.
-    -   NVIDIA GPU that supports NVENC (1000 GTX Series or higher) (or with an AMD GPU that supports AMF VCE) with the latest driver.
-    -   Laptops with an onboard (Intel HD, AMD iGPU) and an additional dedicated GPU (NVidia GTX/RTX, AMD HD/R5/R7): you should assign the dedicated GPU or "high performance graphics adapter" to the applications ALVR, SteamVR for best performance and compatibility. (NVidia: Nvidia control panel->3d settings->application settings; AMD: similiar way)
-
--   802.11ac 5Ghz wireless or ethernet wired connection  
-    -   It is recommended to use 802.11ac 5Ghz for the headset and ethernet for PC  
-    -   You need to connect both the PC and the headset to same router (or use a routed connection as described [here](https://github.com/alvr-org/ALVR/wiki/ALVR-v14-and-Above))
-
-## Install
-
-Follow the installation guide [here](https://github.com/alvr-org/ALVR/wiki/Installation-guide).
-
-## Troubleshooting
-
--   Please check the [Troubleshooting](https://github.com/alvr-org/ALVR/wiki/Troubleshooting) page. The original repository [wiki](https://github.com/polygraphene/ALVR/wiki/Troubleshooting) can also help.  
--   Configuration recommendations and information may be found [here](https://github.com/alvr-org/ALVR/wiki/PC)
-
-## Uninstall
-
-Open `ALVR Dashboard.exe`, go to `Installation` tab then press `Remove firewall rules`. Close ALVR window and delete the ALVR folder.
+[Congestion Control for VR Cloud Gaming: Integration and Comparison in Real VR Gaming Environment](https://dl.acm.org/doi/abs/10.1145/3746027.3755439)  <br> 
+To be published in the Proceedings of the 33rd ACM International Conference on Multimedia 2025 (ACM MM'25)  <br>
+The system is built upon the [codebase of ALVR](https://github.com/alvr-org/ALVR). <br>
+We are grateful to the ALVR team for their work, and we acknowledge and give them credit for their contributions.<br>
+ALVR streams VR games from your PC to your VR headset via Wi-Fi. <br>
+Please read more details about the supported VR Headsets, PC OS, requirements, and tools required on [ALVR](https://github.com/alvr-org/ALVR).
 
 ## Build from source
 
 You can follow the guide [here](https://github.com/alvr-org/ALVR/wiki/Building-From-Source).
 
-## License
+## System Architecture
+![system Overview](figures/systemOverview.png)
+We integrated GCC and NADA for adaptive game streaming and evaluated them against ALVR adaptive bitrate (ABR mode). This integration not only enables fair performance evaluation across benchmarks but also ensures game-agnostic VR cloud gaming through interoperation with SteamVR. 
 
-ALVR is licensed under the [MIT License](LICENSE).
+The **Network Statistics** module feeds network performance metrics to the **Congestion Control** module to compute the target bitrate according to the network conditions. This module outputs the target bitrate and passes it to the **Video Encoder** module.
+## System Performance 
+### Bitrate to network throughput
+![Target Bitrate over stable WiFi network (35 Mb/s)](figures/latency_30Mbps.png)
+![Target bitrate response to varying bandwidth (highlighted in gray) over 5G mobile network](figures/latency_mobile.png)
 
-## Privacy policy
+### Motion-to-photon Latency 
+![Motion to Photon Latency over stable WiFi network (35 Mb/s)](figures/latency_30Mbps.png)
+![Motion to Photon Latency over 5G mobile network](figures/latency_mobile.png)
 
-ALVR apps do not directly collect any kind of data.
+### Visual Quality (PSNR and SSIM)
+![Peak Signal-to-Noise Ratio & Structural Similarity Index Measure (SSIM) over stable WiFi network](figures/ssim_psnr_30mbps.png)
+![Peak Signal-to-Noise Ratio & Structural Similarity Index Measure (SSIM) over 5G mobile network](figures/ssim_psnr_mobile.png)
 
-## Donate
-
-If you want to support this project you can make a donation to our [Open Source Collective account](https://opencollective.com/alvr).
-
-You can also donate to the original author of ALVR using Paypal (polygraphene@gmail.com) or with bitcoin (1FCbmFVSjsmpnAj6oLx2EhnzQzzhyxTLEv).
-
-[badge-discord]: https://img.shields.io/discord/720612397580025886?style=for-the-badge&logo=discord&color=5865F2 "Join us on Discord"
-[link-discord]: https://discord.gg/ALVR
-[badge-matrix]: https://img.shields.io/static/v1?label=chat&message=%23alvr&style=for-the-badge&logo=matrix&color=blueviolet "Join us on Matrix"
-[link-matrix]: https://matrix.to/#/#alvr:ckie.dev?via=ckie.dev
-[badge-opencollective]: https://img.shields.io/opencollective/all/alvr?style=for-the-badge&logo=opencollective&color=79a3e6 "Donate"
-[link-opencollective]: https://opencollective.com/alvr
