@@ -6,8 +6,9 @@ ALVR streams VR games from your PC to your VR headset via Wi-Fi. <br>
 Please read more details about the supported VR Headsets, PC OS, requirements, and tools required on [ALVR](https://github.com/alvr-org/ALVR).
 
 ## Build from source
+We created 3 main branches: 1) the default branch (GCC) implements the Google Congestion Control algorithm based on its [RFC](https://datatracker.ietf.org/doc/html/draft-ietf-rmcat-gcc-02) and the [webrtc opensource](https://webrtc.googlesource.com/src/) , 2) the NADA branch implements the Cisco standard (NADA: A Unified Congestion Control Scheme for Real-Time Media) according to its [RFC](https://datatracker.ietf.org/doc/draft-ietf-rmcat-nada/02/), and 3) ALVR-origin implements the default ALVR bitrate control. Note that you need to change the ALVR bitrate to adaptive (ABR) before testing on ALVR-origin.
 
-You can follow the guide [here](https://github.com/alvr-org/ALVR/wiki/Building-From-Source).
+Once cloned, you can checkout any branch and follow the guide [here](https://github.com/alvr-org/ALVR/wiki/Building-From-Source) to build the server and client applications from source.
 
 ## System Architecture
 <img src="systemOverview.png" alt="system Overview" width="50%">
