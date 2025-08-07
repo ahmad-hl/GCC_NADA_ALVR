@@ -18,7 +18,7 @@ We integrated GCC and NADA for adaptive game streaming and evaluated them agains
 The **Network Statistics** module feeds network performance metrics to the **Congestion Control** module to compute the target bitrate according to the network conditions. This module outputs the target bitrate and passes it to the **Video Encoder** module.
 ## System Performance 
 ### Bitrate to network throughput
-| ![Target Bitrate over stable WiFi network (35 Mb/s)](figures\line_bitrate30Mbps.jpg) | ![Target bitrate response to varying bandwidth (highlighted in gray) over 5G mobile network](figures\line_bitrate5Gmobile.jpg) |
+| ![Target Bitrate over stable WiFi network (35 Mb/s)](figures/line_bitrate30Mbps.jpg) | ![Target bitrate response to varying bandwidth (highlighted in gray) over 5G mobile network](figures/line_bitrate5Gmobile.jpg) |
 |-------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------|
 | *Stable WiFi Network* | *5G Mobile Network* |
 
@@ -27,7 +27,7 @@ For Stable Bandwidth (35Mb/s), NADA and GCC operate in two phases:  Ramp-up and 
 For 5G Network Bandwidth, ALVR-ABR frequently overshoots in its attempts to utilize the available bandwidth. NADA maintains a relatively lower target bitrate and experiences fewer overshooting events during high bandwidth variation. GCC has the fewest overshooting events. 
 
 ### Motion-to-photon Latency 
-| ![Motion to Photon Latency over stable WiFi network (35 Mb/s)](figures\latency_30Mbps.png) | ![Motion to Photon Latency over 5G mobile network](figures\latency_mobile.png) |
+| ![Motion to Photon Latency over stable WiFi network (35 Mb/s)](figures/latency_30Mbps.png) | ![Motion to Photon Latency over 5G mobile network](figures/latency_mobile.png) |
 |------------------------------------------------------------------------------------|------------------------------------------------------------------------|
 | *Stable WiFi Network* | *5G Mobile Network* |
 
@@ -37,7 +37,7 @@ For 5G Network Bandwidth, ALVR-ABR exhibits high latency (mean 126 ms) with sign
 
 
 ### Visual Quality (PSNR and SSIM)
-| ![Peak Signal-to-Noise Ratio & Structural Similarity Index Measure (SSIM) over stable WiFi network](figures\ssim_psnr_30mbps.png) | ![Peak Signal-to-Noise Ratio & Structural Similarity Index Measure (SSIM) over 5G mobile network](figures\ssim_psnr_mobile.png) |
+| ![Peak Signal-to-Noise Ratio & Structural Similarity Index Measure (SSIM) over stable WiFi network](figures/ssim_psnr_30mbps.png) | ![Peak Signal-to-Noise Ratio & Structural Similarity Index Measure (SSIM) over 5G mobile network](figures/ssim_psnr_mobile.png) |
 |--------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------|
 | *Stable WiFi Network* | *5G Mobile Network* |
 
