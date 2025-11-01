@@ -29,7 +29,7 @@ statrs = "0.16"
 alvr_server_io.workspace = true
 sysinfo = { version = "0.29", default-features = false }
 tungstenite = "0.20"
-ureq = { version = "2", features = ["json"] }
+ureq = { version = "3", features = ["json"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 console_error_panic_hook = "0.1"
